@@ -71,7 +71,7 @@ class MenuPrincipal extends StatelessWidget {
               children: [
                 Text(
                   "Ajedrez",
-                  style: TextStyle(fontSize: 100, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                 ),
 
                 FormBuilderTextField(key: inputKey, name: "duracion"),
