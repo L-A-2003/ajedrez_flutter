@@ -1,0 +1,1 @@
+enum Tipo { blancas, negras }
