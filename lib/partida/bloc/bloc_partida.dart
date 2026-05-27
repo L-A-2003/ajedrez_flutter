@@ -8,54 +8,77 @@ import 'package:ajedrez_flutter/partida/widgets/piezas/reina.dart';
 import 'package:ajedrez_flutter/partida/widgets/piezas/rey.dart';
 import 'package:ajedrez_flutter/partida/widgets/piezas/torre.dart';
 import 'package:bloc/bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-sealed class TableroEvent {}
+sealed class PartidaEvent {}
 
-final class IniciarTablero extends TableroEvent {}
+final class PartidaIniciar extends PartidaEvent {}
 
-final class VerMovimientosPosiblesTablero extends TableroEvent {
+final class PartidaVerMovimientosPosibles extends PartidaEvent {
   final Pieza pieza;
   final (int, int) coordenadasPieza;
   final List<(int, int)> movimientosPosibles;
 
-  VerMovimientosPosiblesTablero({
+  PartidaVerMovimientosPosibles({
     required this.pieza,
     required this.coordenadasPieza,
     required this.movimientosPosibles,
   });
 }
 
-final class MoverPiezaTablero extends TableroEvent {
+final class PartidaMoverPieza extends PartidaEvent {
   final (int, int) coordenadas;
 
-  MoverPiezaTablero({required this.coordenadas});
+  PartidaMoverPieza({required this.coordenadas});
 }
 
-final class EstadoTablero {
-  final List<List<Pieza?>> tableroPiezas;
-  final List<List<CasillaMovible?>> tableroCasillasMovibles;
-  final Tipo turno;
+final class PartidaTiempoAgotado extends PartidaEvent {
+  final Tipo color;
 
-  EstadoTablero({
-    required this.tableroPiezas,
-    required this.tableroCasillasMovibles,
+  PartidaTiempoAgotado({required this.color});
+}
+
+sealed class PartidaState {}
+
+final class PartidaJugando extends PartidaState {
+  final Tipo turno;
+  final List<List<Pieza?>> tableroPiezas;
+  final List<FaIconData> piezasNegrasComidas;
+  final List<FaIconData> piezasBlancasComidas;
+  final List<List<CasillaMovible?>> tableroCasillasMovibles;
+
+  PartidaJugando({
     required this.turno,
+    required this.tableroPiezas,
+    required this.piezasNegrasComidas,
+    required this.piezasBlancasComidas,
+    required this.tableroCasillasMovibles,
   });
 }
 
-class BlocTablero extends Bloc<TableroEvent, EstadoTablero> {
-  BlocTablero()
+final class PartidaEmpate extends PartidaState {}
+
+final class PartidaGanador extends PartidaState {
+  final Tipo color;
+
+  PartidaGanador({required this.color});
+}
+
+class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
+  BlocPartida()
     : super(
-        EstadoTablero(
-          tableroPiezas: [],
-          tableroCasillasMovibles: [],
+        PartidaJugando(
           turno: Tipo.blancas,
+          tableroPiezas: [],
+          piezasNegrasComidas: [],
+          piezasBlancasComidas: [],
+          tableroCasillasMovibles: [],
         ),
       ) {
     Pieza? piezaSeleccionada;
     (int, int) coordenadasPiezaSeleccionada = (-1, -1);
 
-    on<IniciarTablero>((event, emit) {
+    on<PartidaIniciar>((event, emit) {
       List<List<Pieza?>> tableroPiezas = List.generate(8, (indexColumna) {
         return List.generate(8, (indexFila) {
           switch ((indexColumna, indexFila)) {
@@ -115,16 +138,20 @@ class BlocTablero extends Bloc<TableroEvent, EstadoTablero> {
       });
 
       emit(
-        EstadoTablero(
-          tableroPiezas: tableroPiezas,
-          tableroCasillasMovibles: [],
+        PartidaJugando(
           turno: Tipo.blancas,
+          piezasNegrasComidas: [],
+          piezasBlancasComidas: [],
+          tableroCasillasMovibles: [],
+          tableroPiezas: tableroPiezas,
         ),
       );
     });
 
-    on<VerMovimientosPosiblesTablero>((event, emit) {
-      if (event.pieza.color == state.turno) {
+    on<PartidaVerMovimientosPosibles>((event, emit) {
+      PartidaJugando estadoActual = state as PartidaJugando;
+
+      if (event.pieza.color == estadoActual.turno) {
         List<List<CasillaMovible?>> tableroCasillasMovibles = [];
 
         if (event.coordenadasPieza != coordenadasPiezaSeleccionada) {
@@ -148,17 +175,40 @@ class BlocTablero extends Bloc<TableroEvent, EstadoTablero> {
         }
 
         emit(
-          EstadoTablero(
-            tableroPiezas: state.tableroPiezas,
+          PartidaJugando(
+            turno: estadoActual.turno,
+            tableroPiezas: estadoActual.tableroPiezas,
             tableroCasillasMovibles: tableroCasillasMovibles,
-            turno: state.turno,
+            piezasNegrasComidas: estadoActual.piezasNegrasComidas,
+            piezasBlancasComidas: estadoActual.piezasBlancasComidas,
           ),
         );
       }
     });
 
-    on<MoverPiezaTablero>((event, emit) {
-      List<List<Pieza?>> tableroPiezas = List.from(state.tableroPiezas);
+    on<PartidaMoverPieza>((event, emit) {
+      PartidaJugando estadoActual = state as PartidaJugando;
+
+      List<List<Pieza?>> tableroPiezas = List.from(estadoActual.tableroPiezas);
+      List<FaIconData> piezasNegrasComidas = List.from(
+        estadoActual.piezasNegrasComidas,
+      );
+      List<FaIconData> piezasBlancasComidas = List.from(
+        estadoActual.piezasBlancasComidas,
+      );
+
+      if (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] is Pieza) {
+        FaIconData piezaComida =
+            (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] as Pieza)
+                .icono;
+
+        if (estadoActual.turno == Tipo.blancas) {
+          piezasNegrasComidas.add(piezaComida);
+        } else {
+          piezasBlancasComidas.add(piezaComida);
+        }
+      }
+
       tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] = generarPieza(
         piezaSeleccionada as Pieza,
         event.coordenadas.$1,
@@ -170,12 +220,20 @@ class BlocTablero extends Bloc<TableroEvent, EstadoTablero> {
           null;
 
       emit(
-        EstadoTablero(
+        PartidaJugando(
           tableroPiezas: tableroPiezas,
           tableroCasillasMovibles: [],
-          turno: state.turno == Tipo.blancas ? Tipo.negras : Tipo.blancas,
+          piezasBlancasComidas: piezasBlancasComidas,
+          piezasNegrasComidas: piezasNegrasComidas,
+          turno: estadoActual.turno == Tipo.blancas
+              ? Tipo.negras
+              : Tipo.blancas,
         ),
       );
+    });
+  
+    on<PartidaTiempoAgotado>((event, emit){
+      //Ver si es empate por material insuficiente o gana el contrario
     });
   }
 

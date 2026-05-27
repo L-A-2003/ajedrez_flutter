@@ -1,6 +1,6 @@
 import 'package:ajedrez_flutter/menu/bloc/bloc_aplicacion.dart';
 import 'package:ajedrez_flutter/menu/views/menu_principal.dart';
-import 'package:ajedrez_flutter/partida/views/tablero.dart';
+import 'package:ajedrez_flutter/partida/views/partida.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -26,7 +26,7 @@ class MainApp extends StatelessWidget {
                       case AplicacionEsperando():
                         return MenuPrincipal();
                       case AplicacionJugando():
-                        return Tablero();
+                        return Partida(duracion: state.duracion);
                     }
                   },
                 ),

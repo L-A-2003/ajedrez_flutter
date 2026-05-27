@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
 
 class MenuPrincipal extends StatelessWidget {
   const MenuPrincipal({super.key});
@@ -67,20 +68,38 @@ class MenuPrincipal extends StatelessWidget {
               boxShadow: [BoxShadow(spreadRadius: 4, blurRadius: 10)],
             ),
             child: Column(
-              spacing: 10,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
               children: [
                 Text(
                   "Ajedrez",
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 100, fontWeight: FontWeight.bold),
                 ),
 
-                FormBuilderTextField(key: inputKey, name: "duracion"),
-                IconButton(
-                  onPressed: () => BlocProvider.of<AplicacionBloc>(
-                    context,
-                  ).add(AplicacionIniciarPartida()),
-                  icon: Icon(Icons.play_arrow),
-                  iconSize: 100,
+                SizedBox(
+                  width: medidaCasilla * 2,
+                  child: FormBuilderTextField(
+                    key: inputKey,
+                    initialValue: "10",
+                    name: "duracion",
+                    textAlign: TextAlign.center,
+                    validator: FormBuilderValidators.positiveNumber(
+                      errorText: "Ingrese una duración válida",
+                    ),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: "Duración en minutos",
+                      floatingLabelAlignment: FloatingLabelAlignment.center,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: IconButton(
+                    onPressed: () => iniciarPartida(context, inputKey),
+                    icon: Icon(Icons.play_arrow),
+                    iconSize: 100,
+                  ),
                 ),
               ],
             ),
@@ -143,5 +162,18 @@ class MenuPrincipal extends StatelessWidget {
     return piezas;
   }
 
-  void validarDuracion() {}
+  void iniciarPartida(
+    BuildContext context,
+    GlobalKey<FormBuilderFieldState> inputKey,
+  ) {
+    inputKey.currentState!.save();
+
+    if (inputKey.currentState!.validate()) {
+      BlocProvider.of<AplicacionBloc>(context).add(
+        AplicacionIniciarPartida(
+          duracion: int.parse(inputKey.currentState!.value),
+        ),
+      );
+    }
+  }
 }

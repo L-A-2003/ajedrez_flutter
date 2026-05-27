@@ -1,4 +1,4 @@
-import 'package:ajedrez_flutter/partida/bloc/bloc_tablero.dart';
+import 'package:ajedrez_flutter/partida/bloc/bloc_partida.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,10 +12,10 @@ class CasillaMovible extends StatelessWidget {
     double medidaCasilla = MediaQuery.of(context).size.height / 8;
 
     return TapRegion(
-      behavior: HitTestBehavior.translucent,
-      onTapInside: (event) => BlocProvider.of<BlocTablero>(
+      behavior: HitTestBehavior.opaque,
+      onTapInside: (event) => BlocProvider.of<BlocPartida>(
         context,
-      ).add(MoverPiezaTablero(coordenadas: (y, x))),
+      ).add(PartidaMoverPieza(coordenadas: (y, x))),
       child: SizedBox(
         height: medidaCasilla,
         width: medidaCasilla,

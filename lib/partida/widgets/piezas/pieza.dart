@@ -1,4 +1,4 @@
-import 'package:ajedrez_flutter/partida/bloc/bloc_tablero.dart';
+import 'package:ajedrez_flutter/partida/bloc/bloc_partida.dart';
 import 'package:ajedrez_flutter/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,8 +36,8 @@ abstract class Pieza extends StatelessWidget {
 
     return TapRegion(
       behavior: HitTestBehavior.translucent,
-      onTapInside: (event) => BlocProvider.of<BlocTablero>(context).add(
-        VerMovimientosPosiblesTablero(
+      onTapInside: (event) => BlocProvider.of<BlocPartida>(context).add(
+        PartidaVerMovimientosPosibles(
           pieza: this,
           coordenadasPieza: (y, x),
           movimientosPosibles: obtenerPosiblesMovimientos(),
