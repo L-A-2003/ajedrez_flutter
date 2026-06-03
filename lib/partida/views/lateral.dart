@@ -34,6 +34,8 @@ class _LateralState extends State<Lateral> {
               minutos--;
 
               if (minutos == -1) {
+                minutos = 0;
+
                 BlocProvider.of<BlocPartida>(
                   context,
                 ).add(PartidaTiempoAgotado(color: widget.color));
