@@ -83,69 +83,68 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
     on<PartidaIniciar>((event, emit) {
       List<List<Pieza?>>
       tableroPiezas = // Crea el tablero tableroPirezas[0] devuelve la primera fila, tableroPiezas[0][0] devuelve la primera casilla de la primera fila
-          List.generate // List.generate llama a una funcion de (cantidad valores, nombre, {funcion que se llama por cada valor})
-          // En este caso se crean las indexColumna(Filas [Verticales]) y dentro de cada columna se crean las indexFila(Columnas [Horizontales])
-          (8, (indexColumna) {
-            return List.generate(8, (indexFila) {
-              switch ((indexColumna, indexFila)) {
-                // Luego en el switch se asigna la pieza correspondiente a cada casilla
-                case (1, _):
-                case (6, _):
-                  return Peon(
-                    color: indexColumna == 1 ? Tipo.negras : Tipo.blancas,
-                    x: indexFila,
-                    y: indexColumna,
-                    primerMovimiento: true,
-                  );
-                case (0, 0):
-                case (0, 7):
-                case (7, 0):
-                case (7, 7):
-                  return Torre(
-                    color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
-                    x: indexFila,
-                    y: indexColumna,
-                  );
-                case (0, 1):
-                case (0, 6):
-                case (7, 1):
-                case (7, 6):
-                  return Caballo(
-                    color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
-                    x: indexFila,
-                    y: indexColumna,
-                  );
-                case (0, 2):
-                case (0, 5):
-                case (7, 2):
-                case (7, 5):
-                  return Alfil(
-                    color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
-                    x: indexFila,
-                    y: indexColumna,
-                  );
-                case (0, 3):
-                case (7, 3):
-                  return Reina(
-                    color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
-                    x: indexFila,
-                    y: indexColumna,
-                  );
-                case (0, 4):
-                case (7, 4):
-                  return Rey(
-                    color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
-                    x: indexFila,
-                    y: indexColumna,
-                  );
-              }
+      List.generate(8, (indexColumna) {
+        return List.generate // List.generate llama a una funcion de (cantidad valores, nombre, {funcion que se llama por cada valor})
+        // En este caso se crean las indexColumna(Filas [Verticales]) y dentro de cada columna se crean las indexFila(Columnas [Horizontales])
+        (8, (indexFila) {
+          switch ((indexColumna, indexFila)) {
+            // Luego en el switch se asigna la pieza correspondiente a cada casilla
+            case (1, _):
+            case (6, _):
+              return Peon(
+                color: indexColumna == 1 ? Tipo.negras : Tipo.blancas,
+                x: indexFila,
+                y: indexColumna,
+                primerMovimiento: true,
+              );
+            case (0, 0):
+            case (0, 7):
+            case (7, 0):
+            case (7, 7):
+              return Torre(
+                color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
+                x: indexFila,
+                y: indexColumna,
+              );
+            case (0, 1):
+            case (0, 6):
+            case (7, 1):
+            case (7, 6):
+              return Caballo(
+                color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
+                x: indexFila,
+                y: indexColumna,
+              );
+            case (0, 2):
+            case (0, 5):
+            case (7, 2):
+            case (7, 5):
+              return Alfil(
+                color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
+                x: indexFila,
+                y: indexColumna,
+              );
+            case (0, 3):
+            case (7, 3):
+              return Reina(
+                color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
+                x: indexFila,
+                y: indexColumna,
+              );
+            case (0, 4):
+            case (7, 4):
+              return Rey(
+                color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
+                x: indexFila,
+                y: indexColumna,
+              );
+          }
 
-              return null;
-            });
-          });
-
+          return null;
+        });
+      });
+      // Cambia el estado a PartidaJugando con el tablero inicializado
       emit(
-        // Cambia el estado a PartidaJugando con el tablero inicializado
         PartidaJugando(
           turno: Tipo.blancas,
           piezasNegrasComidas: [],
@@ -171,10 +170,7 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
                 indexFila,
                 indexColumna,
               ))) {
-                return CasillaMovible(
-                  x: indexFila,
-                  y: indexColumna,
-                ); // Si las coordenadas de la casilla esta en movimientosPosibles, se muestra la casilla movible
+                return CasillaMovible(x: indexFila, y: indexColumna);
               } else {
                 return null;
               }
@@ -267,5 +263,444 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
     }
 
     return null;
+  }
+
+  bool reyEnJaque(int y, int x, Tipo colorRey) {
+    int yAuxiliar = y;
+    int xAuxiliar = x;
+    List<List<Pieza?>> tableroPiezas = (state as PartidaJugando).tableroPiezas;
+
+    //---------------------------------------------------
+
+    //Vertical hacia arriba
+    if (y < 7) {
+      while (yAuxiliar + 1 <= 7) {
+        int resultado = buscarPieza(
+          piezaAtacandoReyVerticalHorizontal,
+          tableroPiezas,
+          yAuxiliar,
+          xAuxiliar,
+          colorRey,
+        );
+
+        if (resultado == 0) {
+          break;
+        } else if (resultado == 1) {
+          return true;
+        }
+
+        yAuxiliar++;
+      }
+
+      yAuxiliar = y;
+    }
+
+    //Vertical hacia abajo
+    if (y > 0) {
+      while (yAuxiliar - 1 >= 0) {
+        int resultado = buscarPieza(
+          piezaAtacandoReyVerticalHorizontal,
+          tableroPiezas,
+          yAuxiliar,
+          xAuxiliar,
+          colorRey,
+        );
+
+        if (resultado == 0) {
+          break;
+        } else if (resultado == 1) {
+          return true;
+        }
+
+        yAuxiliar--;
+      }
+
+      yAuxiliar = y;
+    }
+
+    //Horizontal hacia la derecha
+    if (x < 7) {
+      while (xAuxiliar + 1 <= 7) {
+        int resultado = buscarPieza(
+          piezaAtacandoReyVerticalHorizontal,
+          tableroPiezas,
+          yAuxiliar,
+          xAuxiliar,
+          colorRey,
+        );
+
+        if (resultado == 0) {
+          break;
+        } else if (resultado == 1) {
+          return true;
+        }
+
+        xAuxiliar++;
+      }
+
+      xAuxiliar = x;
+    }
+
+    //Horizontal hacia la izquierda
+    if (x > 0) {
+      while (xAuxiliar - 1 >= 0) {
+        int resultado = buscarPieza(
+          piezaAtacandoReyVerticalHorizontal,
+          tableroPiezas,
+          yAuxiliar,
+          xAuxiliar,
+          colorRey,
+        );
+
+        if (resultado == 0) {
+          break;
+        } else if (resultado == 1) {
+          return true;
+        }
+
+        xAuxiliar--;
+      }
+    }
+
+    //---------------------------------------------------
+
+    //Diagonal hacia arriba a la derecha
+    if (y < 7 && x < 7) {
+      yAuxiliar = y + 1;
+      xAuxiliar = x + 1;
+
+      while (yAuxiliar <= 7 && xAuxiliar <= 7) {
+        int resultado = buscarPieza(
+          piezaAtacandoReyDiagonal,
+          tableroPiezas,
+          yAuxiliar,
+          xAuxiliar,
+          colorRey,
+        );
+
+        if (resultado == 0) {
+          break;
+        } else if (resultado == 1) {
+          return true;
+        }
+
+        yAuxiliar++;
+        xAuxiliar++;
+      }
+    }
+
+    //Diagonal hacia arriba a la izquierda
+    if (y < 7 && x > 0) {
+      yAuxiliar = y + 1;
+      xAuxiliar = x - 1;
+
+      while (yAuxiliar <= 7 && xAuxiliar >= 0) {
+        int resultado = buscarPieza(
+          piezaAtacandoReyDiagonal,
+          tableroPiezas,
+          yAuxiliar,
+          xAuxiliar,
+          colorRey,
+        );
+
+        if (resultado == 0) {
+          break;
+        } else if (resultado == 1) {
+          return true;
+        }
+
+        yAuxiliar++;
+        xAuxiliar--;
+      }
+    }
+
+    //Diagonal hacia abajo a la derecha
+    if (y > 0 && x < 7) {
+      yAuxiliar = y - 1;
+      xAuxiliar = x + 1;
+
+      while (yAuxiliar >= 0 && xAuxiliar <= 7) {
+        int resultado = buscarPieza(
+          piezaAtacandoReyDiagonal,
+          tableroPiezas,
+          yAuxiliar,
+          xAuxiliar,
+          colorRey,
+        );
+
+        if (resultado == 0) {
+          break;
+        } else if (resultado == 1) {
+          return true;
+        }
+
+        yAuxiliar--;
+        xAuxiliar++;
+      }
+    }
+
+    //Diagonal hacia abajo a la izquierda
+    if (y > 0 && x > 0) {
+      yAuxiliar = y - 1;
+      xAuxiliar = x - 1;
+
+      while (yAuxiliar >= 0 && xAuxiliar >= 0) {
+        int resultado = buscarPieza(
+          piezaAtacandoReyDiagonal,
+          tableroPiezas,
+          yAuxiliar,
+          xAuxiliar,
+          colorRey,
+        );
+
+        if (resultado == 0) {
+          break;
+        } else if (resultado == 1) {
+          return true;
+        }
+
+        yAuxiliar--;
+        xAuxiliar--;
+      }
+    }
+
+    //---------------------------------------------------
+
+    //Peones
+    if (colorRey == Tipo.blancas) {
+      if (y < 7 && buscarPeon(y + 1, x, tableroPiezas, colorRey)) {
+        return true;
+      }
+    } else {
+      if (y > 0 && buscarPeon(y - 1, x, tableroPiezas, colorRey)) {
+        return true;
+      }
+    }
+
+    //---------------------------------------------------
+
+    //Caballos
+    if (y < 6 && buscarCaballoVertical(y + 2, x, tableroPiezas, colorRey)) {
+      return true;
+    }
+
+    if (y > 1 && buscarCaballoVertical(y - 2, x, tableroPiezas, colorRey)) {
+      return true;
+    }
+
+    if (x < 6 && buscarCaballoHorizontal(y, x + 2, tableroPiezas, colorRey)) {
+      return true;
+    }
+
+    if (x > 1 && buscarCaballoHorizontal(y, x - 2, tableroPiezas, colorRey)) {
+      return true;
+    }
+
+    //---------------------------------------------------
+
+    //Rey
+    if (y < 7 && buscarReyVertical(y + 1, x, tableroPiezas, colorRey)) {
+      return true;
+    }
+
+    if (y > 0 && buscarReyVertical(y - 1, x, tableroPiezas, colorRey)) {
+      return true;
+    }
+
+    if (x < 7 &&
+        buscarPieza(piezaAtacandoReyEsRey, tableroPiezas, y, x + 1, colorRey) ==
+            1) {
+      return true;
+    }
+
+    if (x > 0 &&
+        buscarPieza(piezaAtacandoReyEsRey, tableroPiezas, y, x - 1, colorRey) ==
+            1) {
+      return true;
+    }
+
+    return false;
+  }
+
+  int buscarPieza(
+    bool Function(Pieza) funcionReyAtacado,
+    List<List<Pieza?>> tableroPiezas,
+    int y,
+    int x,
+    Tipo colorRey,
+  ) {
+    /*
+      0 = No esta en jaque
+      1 = Esta en jaque
+      2 = No encontro pieza, sigue buscando
+    */
+    if (tableroPiezas[y][x] != null) {
+      Pieza pieza = tableroPiezas[y][x]!;
+
+      if (pieza.color != colorRey) {
+        return funcionReyAtacado(pieza) ? 1 : 0;
+      } else {
+        return 0;
+      }
+    }
+
+    return 2;
+  }
+
+  bool buscarPeon(
+    int y,
+    int x,
+    List<List<Pieza?>> tableroPiezas,
+    Tipo colorRey,
+  ) {
+    if (x > 0 &&
+        buscarPieza(
+              piezaAtacandoReyEsPeon,
+              tableroPiezas,
+              y,
+              x - 1,
+              colorRey,
+            ) ==
+            1) {
+      return true;
+    }
+
+    if (x < 7 &&
+        buscarPieza(
+              piezaAtacandoReyEsPeon,
+              tableroPiezas,
+              y,
+              x + 1,
+              colorRey,
+            ) ==
+            1) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool buscarCaballoVertical(
+    int y,
+    int x,
+    List<List<Pieza?>> tableroPiezas,
+    Tipo colorRey,
+  ) {
+    if (x > 0 &&
+        buscarPieza(
+              piezaAtacandoReyEsCaballo,
+              tableroPiezas,
+              y,
+              x - 1,
+              colorRey,
+            ) ==
+            1) {
+      return true;
+    }
+
+    if (x < 7 &&
+        buscarPieza(
+              piezaAtacandoReyEsCaballo,
+              tableroPiezas,
+              y,
+              x + 1,
+              colorRey,
+            ) ==
+            1) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool buscarCaballoHorizontal(
+    int y,
+    int x,
+    List<List<Pieza?>> tableroPiezas,
+    Tipo colorRey,
+  ) {
+    if (y > 0 &&
+        buscarPieza(
+              piezaAtacandoReyEsCaballo,
+              tableroPiezas,
+              y - 1,
+              x,
+              colorRey,
+            ) ==
+            1) {
+      return true;
+    }
+
+    if (y < 7 &&
+        buscarPieza(
+              piezaAtacandoReyEsCaballo,
+              tableroPiezas,
+              y + 1,
+              x,
+              colorRey,
+            ) ==
+            1) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool buscarReyVertical(
+    int y,
+    int x,
+    List<List<Pieza?>> tableroPiezas,
+    Tipo colorRey,
+  ) {
+    if (x > 0 &&
+        buscarPieza(piezaAtacandoReyEsRey, tableroPiezas, y, x - 1, colorRey) ==
+            1) {
+      return true;
+    }
+
+    if (buscarPieza(piezaAtacandoReyEsRey, tableroPiezas, y, x, colorRey) ==
+        1) {
+      return true;
+    }
+
+    if (x < 7 &&
+        buscarPieza(piezaAtacandoReyEsRey, tableroPiezas, y, x + 1, colorRey) ==
+            1) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool piezaAtacandoReyVerticalHorizontal(Pieza pieza) {
+    switch (pieza.runtimeType) {
+      case const (Torre):
+      case const (Reina):
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  bool piezaAtacandoReyDiagonal(Pieza pieza) {
+    switch (pieza.runtimeType) {
+      case const (Alfil):
+      case const (Reina):
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  bool piezaAtacandoReyEsPeon(Pieza pieza) {
+    return pieza.runtimeType == Peon;
+  }
+
+  bool piezaAtacandoReyEsCaballo(Pieza pieza) {
+    return pieza.runtimeType == Caballo;
+  }
+
+  bool piezaAtacandoReyEsRey(Pieza pieza) {
+    return pieza.runtimeType == Caballo;
   }
 }
