@@ -22,12 +22,48 @@ abstract class Pieza extends StatelessWidget {
 
   @protected
   List<(int, int)> obtenerPosiblesMovimientosVerticalesHorizontales() {
-    return [];
+    List<(int, int)> movimientos = [];
+
+    for (int i = y - 1; i >= 0; i--) {
+      movimientos.add((x, i));
+    }
+
+    for (int i = y + 1; i < 8; i++) {
+      movimientos.add((x, i));
+    }
+
+    for (int i = x - 1; i >= 0; i--) {
+      movimientos.add((i, y));
+    }
+
+    for (int i = x + 1; i < 8; i++) {
+      movimientos.add((i, y));
+    }
+
+    return movimientos;
   }
 
   @protected
   List<(int, int)> obtenerPosiblesMovimientosDiagonales() {
-    return [];
+    List<(int, int)> movimientos = [];
+
+    for (int i = 1; x - i >= 0 && y - i >= 0; i++) {
+      movimientos.add((x - i, y - i));
+    }
+
+    for (int i = 1; x + i < 8 && y - i >= 0; i++) {
+      movimientos.add((x + i, y - i));
+    }
+
+    for (int i = 1; x - i >= 0 && y + i < 8; i++) {
+      movimientos.add((x - i, y + i));
+    }
+
+    for (int i = 1; x + i < 8 && y + i < 8; i++) {
+      movimientos.add((x + i, y + i));
+    }
+
+    return movimientos;
   }
 
   @override

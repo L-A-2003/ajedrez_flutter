@@ -2,9 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 sealed class AplicacionEvent {}
 
-
-// Llamadas que se le pueden hacer al bloc desde la UI, para que el bloc cambie su estado
-// y la UI se actualice acorde a ese estado
+// Llamadas que se le pueden hacer al bloc, para que el bloc cambie su estado
 final class AplicacionIniciarPartida extends AplicacionEvent {
   final int duracion;
 
@@ -14,7 +12,6 @@ final class AplicacionIniciarPartida extends AplicacionEvent {
 final class AplicacionFinalizoPartida extends AplicacionEvent {}
 
 final class AplicacionVolverMenuPrincipal extends AplicacionEvent {}
-
 
 // Estado del bloc, solo puede ser uno a la vez.
 sealed class AplicacionState {}
@@ -29,11 +26,16 @@ final class AplicacionJugando extends AplicacionState {
 
 // El bloc es el encargado de manejar el estado de la aplicacion
 class AplicacionBloc extends Bloc<AplicacionEvent, AplicacionState> {
-  AplicacionBloc() : super(AplicacionEsperando()) { //Inicia con el estado de esperando
-  // El bloc escucha los eventos que se le envian, y dependiendo del evento, cambia su estado
-  // Se llama con BlocProvider.of<AplicacionBloc>(context).add(AplicacionIniciarPartida(duracion: 60));
+  AplicacionBloc() : super(AplicacionEsperando()) {
+    //Inicia con el estado de esperando
+    // El bloc escucha los eventos que se le envian, y dependiendo del evento, cambia su estado
+    // Se llama con BlocProvider.of<AplicacionBloc>(context).add(AplicacionIniciarPartida(duracion: 60));
     on<AplicacionIniciarPartida>((event, emit) {
       emit(AplicacionJugando(duracion: event.duracion));
+      /*
+      Luego se puede acceder a la duracion con estado = BlocProvider.of<AplicacionBloc>(context).state y verificando que el estado sea AplicacionJugando
+      int duracion = estado.duracion
+       */
     });
 
     on<AplicacionFinalizoPartida>((event, emit) {

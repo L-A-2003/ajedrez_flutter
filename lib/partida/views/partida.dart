@@ -8,7 +8,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class Partida extends StatelessWidget {
   final int duracion;
 
-  const Partida({super.key, required this.duracion});
+  const Partida({
+    super.key,
+    required this.duracion,
+  }); // Se crea el constructor que recibe la duracion de la partida
 
   @override
   Widget build(BuildContext context) {

@@ -11,6 +11,7 @@ import 'package:bloc/bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 sealed class PartidaEvent {}
+// Eventos para iniciar la partida, ver movimientos posibles, mover pieza y tiempo agotado
 
 final class PartidaIniciar extends PartidaEvent {}
 
@@ -40,6 +41,7 @@ final class PartidaTiempoAgotado extends PartidaEvent {
 
 sealed class PartidaState {}
 
+// Estados de jugando, empate y ganador
 final class PartidaJugando extends PartidaState {
   final Tipo turno;
   final List<List<Pieza?>> tableroPiezas;
@@ -79,65 +81,71 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
     (int, int) coordenadasPiezaSeleccionada = (-1, -1);
 
     on<PartidaIniciar>((event, emit) {
-      List<List<Pieza?>> tableroPiezas = List.generate(8, (indexColumna) {
-        return List.generate(8, (indexFila) {
-          switch ((indexColumna, indexFila)) {
-            case (1, _):
-            case (6, _):
-              return Peon(
-                color: indexColumna == 1 ? Tipo.negras : Tipo.blancas,
-                x: indexFila,
-                y: indexColumna,
-                primerMovimiento: true,
-              );
-            case (0, 0):
-            case (0, 7):
-            case (7, 0):
-            case (7, 7):
-              return Torre(
-                color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
-                x: indexFila,
-                y: indexColumna,
-              );
-            case (0, 1):
-            case (0, 6):
-            case (7, 1):
-            case (7, 6):
-              return Caballo(
-                color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
-                x: indexFila,
-                y: indexColumna,
-              );
-            case (0, 2):
-            case (0, 5):
-            case (7, 2):
-            case (7, 5):
-              return Alfil(
-                color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
-                x: indexFila,
-                y: indexColumna,
-              );
-            case (0, 3):
-            case (7, 3):
-              return Reina(
-                color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
-                x: indexFila,
-                y: indexColumna,
-              );
-            case (0, 4):
-            case (7, 4):
-              return Rey(
-                color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
-                x: indexFila,
-                y: indexColumna,
-              );
-          }
+      List<List<Pieza?>>
+      tableroPiezas = // Crea el tablero tableroPirezas[0] devuelve la primera fila, tableroPiezas[0][0] devuelve la primera casilla de la primera fila
+          List.generate // List.generate llama a una funcion de (cantidad valores, nombre, {funcion que se llama por cada valor})
+          // En este caso se crean las indexColumna(Filas [Verticales]) y dentro de cada columna se crean las indexFila(Columnas [Horizontales])
+          (8, (indexColumna) {
+            return List.generate(8, (indexFila) {
+              switch ((indexColumna, indexFila)) {
+                // Luego en el switch se asigna la pieza correspondiente a cada casilla
+                case (1, _):
+                case (6, _):
+                  return Peon(
+                    color: indexColumna == 1 ? Tipo.negras : Tipo.blancas,
+                    x: indexFila,
+                    y: indexColumna,
+                    primerMovimiento: true,
+                  );
+                case (0, 0):
+                case (0, 7):
+                case (7, 0):
+                case (7, 7):
+                  return Torre(
+                    color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
+                    x: indexFila,
+                    y: indexColumna,
+                  );
+                case (0, 1):
+                case (0, 6):
+                case (7, 1):
+                case (7, 6):
+                  return Caballo(
+                    color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
+                    x: indexFila,
+                    y: indexColumna,
+                  );
+                case (0, 2):
+                case (0, 5):
+                case (7, 2):
+                case (7, 5):
+                  return Alfil(
+                    color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
+                    x: indexFila,
+                    y: indexColumna,
+                  );
+                case (0, 3):
+                case (7, 3):
+                  return Reina(
+                    color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
+                    x: indexFila,
+                    y: indexColumna,
+                  );
+                case (0, 4):
+                case (7, 4):
+                  return Rey(
+                    color: indexColumna == 0 ? Tipo.negras : Tipo.blancas,
+                    x: indexFila,
+                    y: indexColumna,
+                  );
+              }
 
-          return null;
-        });
-      });
+              return null;
+            });
+          });
 
       emit(
+        // Cambia el estado a PartidaJugando con el tablero inicializado
         PartidaJugando(
           turno: Tipo.blancas,
           piezasNegrasComidas: [],
@@ -152,8 +160,10 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
       PartidaJugando estadoActual = state as PartidaJugando;
 
       if (event.pieza.color == estadoActual.turno) {
+        // Solo se pueden ver los movimientos posibles de las piezas del turno actual
         List<List<CasillaMovible?>> tableroCasillasMovibles = [];
 
+        // Solo actualiza si la pieza que se clickeo es diferente a la anterior
         if (event.coordenadasPieza != coordenadasPiezaSeleccionada) {
           tableroCasillasMovibles = List.generate(8, (indexColumna) {
             return List.generate(8, (indexFila) {
@@ -161,7 +171,10 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
                 indexFila,
                 indexColumna,
               ))) {
-                return CasillaMovible(x: indexFila, y: indexColumna);
+                return CasillaMovible(
+                  x: indexFila,
+                  y: indexColumna,
+                ); // Si las coordenadas de la casilla esta en movimientosPosibles, se muestra la casilla movible
               } else {
                 return null;
               }
@@ -231,8 +244,8 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         ),
       );
     });
-  
-    on<PartidaTiempoAgotado>((event, emit){
+
+    on<PartidaTiempoAgotado>((event, emit) {
       //Ver si es empate por material insuficiente o gana el contrario
     });
   }

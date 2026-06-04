@@ -18,12 +18,16 @@ class MainApp extends StatelessWidget {
       home: BlocProvider(
         create: (context) => AplicacionBloc(),
         // Todos los child de este BlocProvider van a poder acceder al bloc de la aplicacion, y escuchar sus cambios de estado
-        child: Builder( // Se utiliza un builder para que el context este por debajo del BlocProvider, y asi poder acceder al bloc desde el context
+        child: Builder(
+          // Se utiliza un builder para que el context este por debajo del BlocProvider, y asi poder acceder al bloc desde el context
           builder: (context) {
-            return Scaffold( // Scaffold es base de la app
-              body: Center(  // Solo utilizamos body, y lo centramos
+            return Scaffold(
+              // Scaffold es base de la app
+              body: Center(
+                // Solo utilizamos body, y lo centramos
                 child: BlocBuilder<AplicacionBloc, AplicacionState>(
-                  builder: (context, state) { // BlocBuilder escucha los cambios de estado del bloc de la aplicacion
+                  builder: (context, state) {
+                    // BlocBuilder escucha los cambios de estado del bloc de la aplicacion
                     switch (state) {
                       case AplicacionEsperando():
                         return MenuPrincipal();

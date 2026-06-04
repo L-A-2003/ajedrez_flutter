@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:ajedrez_flutter/constantes.dart' as constantes;
 import 'package:ajedrez_flutter/menu/bloc/bloc_aplicacion.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,17 +10,27 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 class MenuPrincipal extends StatelessWidget {
   const MenuPrincipal({super.key});
 
+  static const int cantidadCasillasAlto = 8;
+  static const int maximoCasillasHorizontal = 50;
+
   @override
   Widget build(BuildContext context) {
     final GlobalKey<FormBuilderFieldState> inputKey =
-        GlobalKey<FormBuilderFieldState>();
+        GlobalKey<FormBuilderFieldState>(); // GlobalKey para el campo de texto
 
-    double medidaCasilla = MediaQuery.of(context).size.height / 8;
+    double medidaCasilla =
+        MediaQuery.of(context).size.height /
+        cantidadCasillasAlto; // Calcula la medida de la casilla basada en la altura de la pantalla
+    // (Por lo que solo va a haber 8 filas)
 
     double cantidadCasillasLargo =
         MediaQuery.of(context).size.width / medidaCasilla;
 
     int cantidadCasillasLargoEntero = cantidadCasillasLargo.floor();
+
+    if (cantidadCasillasLargoEntero > maximoCasillasHorizontal) {
+      cantidadCasillasLargoEntero = maximoCasillasHorizontal;
+    }
 
     double largoCasillaLateral =
         medidaCasilla *
@@ -31,14 +42,18 @@ class MenuPrincipal extends StatelessWidget {
     );
 
     return Stack(
+      // Stack para superponer el tablero y el menu
       children: [
         Column(
+          //  El primer column es el tablero, que aparece debajo del menu
           children: List.generate(8, (indexFila) {
+            // Es una columna con 8 filas. Cada fila es un Row con las casillas.
             return Row(
               children: List.generate(cantidadCasillasLargoEntero + 2, (
                 indexCasilla,
               ) {
                 return Container(
+                  // Este container es cada casilla del tablero.
                   height: medidaCasilla,
                   width:
                       (indexCasilla == 0 ||
@@ -48,9 +63,13 @@ class MenuPrincipal extends StatelessWidget {
                   color:
                       (indexFila.isEven && indexCasilla.isEven) ||
                           (indexFila.isOdd && indexCasilla.isOdd)
-                      ? const Color(0xFFebecd0)
-                      : const Color(0xFF739552),
-                  child: piezasAleatorias.containsKey((indexFila, indexCasilla))
+                      ? constantes.TemaAjedrez.casillaClara
+                      : constantes.TemaAjedrez.casillaOscura,
+                  child:
+                      piezasAleatorias.containsKey((
+                        indexFila,
+                        indexCasilla,
+                      )) // Esto muestra una pieza en la casilla
                       ? piezasAleatorias[(indexFila, indexCasilla)]
                       : SizedBox.shrink(),
                 );
@@ -59,50 +78,77 @@ class MenuPrincipal extends StatelessWidget {
           }),
         ),
         Center(
-          child: Container(
-            height: medidaCasilla * 4,
-            width: medidaCasilla * 5,
-            decoration: BoxDecoration(
-              color: const Color(0xFFebecd0),
-              border: Border.all(width: 5, color: const Color(0xFF739552)),
-              boxShadow: [BoxShadow(spreadRadius: 4, blurRadius: 10)],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final anchoCartel = (constraints.maxWidth * 0.7).clamp(
+                280.0,
+                450.0,
+              );
+              final altoCartel = (constraints.maxHeight * 0.6).clamp(
+                300.0,
+                500.0,
+              );
 
-              children: [
-                Text(
-                  "Ajedrez",
-                  style: TextStyle(fontSize: 100, fontWeight: FontWeight.bold),
-                ),
-
-                SizedBox(
-                  width: medidaCasilla * 2,
-                  child: FormBuilderTextField(
-                    key: inputKey,
-                    initialValue: "10",
-                    name: "duracion",
-                    textAlign: TextAlign.center,
-                    validator: FormBuilderValidators.positiveNumber(
-                      errorText: "Ingrese una duración válida",
-                    ),
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: "Duración en minutos",
-                      floatingLabelAlignment: FloatingLabelAlignment.center,
-                    ),
+              return Container(
+                width: anchoCartel,
+                height: altoCartel,
+                decoration: BoxDecoration(
+                  color: constantes.TemaAjedrez.casillaClara,
+                  border: Border.all(
+                    width: 5,
+                    color: constantes.TemaAjedrez.casillaOscura,
                   ),
+                  boxShadow: [BoxShadow(spreadRadius: 4, blurRadius: 10)],
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: IconButton(
-                    onPressed: () => iniciarPartida(context, inputKey),
-                    icon: Icon(Icons.play_arrow),
-                    iconSize: 100,
-                  ),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      flex: 2,
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: Text(
+                          "Ajedrez",
+                          style: TextStyle(
+                            fontSize: 100,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 150,
+                      child: FormBuilderTextField(
+                        key: inputKey,
+                        initialValue: "10",
+                        name: "duracion",
+                        textAlign: TextAlign.center,
+                        validator: FormBuilderValidators.positiveNumber(
+                          errorText: "Ingrese una duración válida",
+                        ),
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: "Duración en minutos",
+                          floatingLabelAlignment: FloatingLabelAlignment.center,
+                        ),
+                      ),
+                    ),
+                    Flexible(
+                      flex: 2,
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: IconButton(
+                          onPressed: () => iniciarPartida(context, inputKey),
+                          icon: Icon(Icons.play_arrow),
+                          iconSize: 100,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ],
@@ -110,15 +156,17 @@ class MenuPrincipal extends StatelessWidget {
   }
 
   Map<(int, int), Widget> generarPiezasAleatorias(
-    int maximoX,
+    // Devuelve un mapa con coordenadas y piezas aleatorias para mostrar en el tablero
+    int cantidadCasillasHorizontal,
     double medidaCasilla,
   ) {
     Map<(int, int), Widget> piezas = {};
 
-    while (piezas.length < (maximoX * 8) / 3) {
+    while (piezas.length <
+        (cantidadCasillasHorizontal * cantidadCasillasAlto) / 3) {
       (int, int) coordenadaAleatoria = (
-        Random().nextInt(9),
-        Random().nextInt(maximoX - 1) + 1,
+        Random().nextInt(cantidadCasillasAlto),
+        Random().nextInt(cantidadCasillasHorizontal) + 1,
       );
 
       if (!piezas.containsKey(coordenadaAleatoria)) {
@@ -151,8 +199,10 @@ class MenuPrincipal extends StatelessWidget {
           child: Center(
             child: FaIcon(
               icono,
-              color: Random().nextBool() ? Colors.deepPurple : Colors.black,
-              size: 48,
+              color: Random().nextBool()
+                  ? constantes.TemaAjedrez.piezaBlancas
+                  : constantes.TemaAjedrez.piezaNegras,
+              size: medidaCasilla * 0.8,
             ),
           ),
         );
