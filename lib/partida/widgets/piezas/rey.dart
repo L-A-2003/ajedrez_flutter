@@ -10,8 +10,24 @@ class Rey extends Pieza {
     super.icono = FontAwesomeIcons.chessKing,
   });
 
-  @override
-  List<(int, int)> obtenerPosiblesMovimientos() {
-    return [];
-  }
+@override
+List<(int, int)> obtenerPosiblesMovimientos() {
+  final posibles = <(int, int)>[
+    (x + 1, y),
+    (x - 1, y),
+    (x, y + 1),
+    (x, y - 1),
+    (x + 1, y + 1),
+    (x + 1, y - 1),
+    (x - 1, y + 1),
+    (x - 1, y - 1),
+  ];
+
+  return posibles.where((movimiento) {
+    return movimiento.$1 >= 0 &&
+           movimiento.$1 < 8 &&
+           movimiento.$2 >= 0 &&
+           movimiento.$2 < 8;
+  }).toList();
+}
 }
