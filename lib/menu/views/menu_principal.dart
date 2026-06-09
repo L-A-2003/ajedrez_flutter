@@ -202,7 +202,7 @@ class MenuPrincipal extends StatelessWidget {
               color: Random().nextBool()
                   ? constantes.TemaAjedrez.piezaBlancas
                   : constantes.TemaAjedrez.piezaNegras,
-              size: medidaCasilla * 0.8,
+              size: 48,
             ),
           ),
         );
