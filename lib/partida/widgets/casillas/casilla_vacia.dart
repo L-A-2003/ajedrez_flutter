@@ -5,7 +5,7 @@ class CasillaVacia extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double medidaCasilla = MediaQuery.of(context).size.height / 8;
+    double medidaCasilla = MediaQuery.of(context).size.width / 8;
 
     return SizedBox(height: medidaCasilla, width: medidaCasilla);
   }

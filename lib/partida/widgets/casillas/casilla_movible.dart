@@ -9,7 +9,7 @@ class CasillaMovible extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double medidaCasilla = MediaQuery.of(context).size.height / 8;
+    double medidaCasilla = MediaQuery.of(context).size.width / 8;
 
     return TapRegion(
       behavior: HitTestBehavior.opaque,
@@ -20,15 +20,13 @@ class CasillaMovible extends StatelessWidget {
         height: medidaCasilla,
         width: medidaCasilla,
         child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(45),
-            child: Opacity(
-              opacity: 0.3,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  shape: BoxShape.circle,
-                ),
+          child: Opacity(
+            opacity: 0.3,
+            child: Container(
+              margin: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black,
+                shape: BoxShape.circle,
               ),
             ),
           ),

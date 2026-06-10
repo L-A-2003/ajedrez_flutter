@@ -509,22 +509,14 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
 
     switch (pieza.runtimeType) {
       case const (Peon):
-        late int yMirar;
-
-        if (movimientosPosibles.length == 2) {
-          yMirar = movimientosPosibles[pieza.color == Tipo.blancas ? 0 : 1].$2;
-        } else {
-          yMirar = movimientosPosibles.first.$2;
-        }
-
         if (pieza.x < 7) {
-          if (casillaValida(tableroPiezas, yMirar, pieza.x + 1, pieza.color) == 1) {
-            movimientosPosiblesReales.add((pieza.x + 1, yMirar));
+          if (casillaValida(tableroPiezas, movimientosPosibles.first.$2, pieza.x + 1, pieza.color) == 1) {
+            movimientosPosiblesReales.add((pieza.x + 1, movimientosPosibles.first.$2));
           }
         }
         if (pieza.x > 0) {
-          if (casillaValida(tableroPiezas, yMirar, pieza.x - 1, pieza.color) == 1) {
-            movimientosPosiblesReales.add((pieza.x - 1, yMirar));
+          if (casillaValida(tableroPiezas, movimientosPosibles.first.$2, pieza.x - 1, pieza.color) == 1) {
+            movimientosPosiblesReales.add((pieza.x - 1, movimientosPosibles.first.$2));
           }
         }
 

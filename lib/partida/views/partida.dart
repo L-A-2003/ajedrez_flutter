@@ -17,11 +17,11 @@ class Partida extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => BlocPartida()..add(PartidaIniciar()),
-      child: Row(
+      child: Column(
         children: [
-          Lateral(duracion: duracion, color: Tipo.blancas),
-          Tablero(),
           Lateral(duracion: duracion, color: Tipo.negras),
+          Tablero(),
+          Lateral(duracion: duracion, color: Tipo.blancas),
         ],
       ),
     );

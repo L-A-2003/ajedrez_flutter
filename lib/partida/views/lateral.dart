@@ -36,9 +36,7 @@ class _LateralState extends State<Lateral> {
               if (minutos == -1) {
                 minutos = 0;
 
-                BlocProvider.of<BlocPartida>(
-                  context,
-                ).add(PartidaTiempoAgotado(color: widget.color));
+                BlocProvider.of<BlocPartida>(context).add(PartidaTiempoAgotado(color: widget.color));
                 timer.cancel();
               } else {
                 segundos = 59;
@@ -56,48 +54,26 @@ class _LateralState extends State<Lateral> {
 
   @override
   Widget build(BuildContext context) {
-    double anchoLateral =
-        (MediaQuery.of(context).size.width -
-            MediaQuery.of(context).size.height) /
-        2;
+    double anchoLateral = (MediaQuery.of(context).size.height - MediaQuery.of(context).size.width) / 2;
 
     String minutosFormateados = minutos < 10 ? "0$minutos" : minutos.toString();
-    String segundosFormateados = segundos < 10
-        ? "0$segundos"
-        : segundos.toString();
+    String segundosFormateados = segundos < 10 ? "0$segundos" : segundos.toString();
 
     return Container(
-      width: anchoLateral,
+      height: anchoLateral,
       color: Colors.black87,
       child: Align(
-        alignment: widget.color == Tipo.blancas
-            ? AlignmentGeometry.centerStart
-            : AlignmentGeometry.centerEnd,
         child: Container(
-          width: anchoLateral * 0.9,
-          decoration: BoxDecoration(
-            boxShadow: [BoxShadow(spreadRadius: 4, blurRadius: 10)],
-            color: const Color.fromARGB(255, 59, 59, 59),
-          ),
+          height: anchoLateral * 0.9,
+          decoration: BoxDecoration(boxShadow: [BoxShadow(spreadRadius: 4, blurRadius: 10)], color: const Color.fromARGB(255, 59, 59, 59)),
           child: Column(
+            verticalDirection: widget.color == Tipo.blancas ? VerticalDirection.up : VerticalDirection.down,
             spacing: 5,
             children: [
-              Text(
-                (widget.color == Tipo.blancas ? "Blancas" : "Negras"),
-                style: GoogleFonts.rubik(color: Colors.white70, fontSize: 48),
-              ),
-              Divider(),
-              Text(
-                "$minutosFormateados : $segundosFormateados",
-                style: GoogleFonts.rubik(color: Colors.white70, fontSize: 48),
-              ),
+              Text("$minutosFormateados : $segundosFormateados", style: GoogleFonts.rubik(color: Colors.white70, fontSize: 48)),
               BlocSelector<BlocPartida, PartidaState, List<FaIconData>>(
                 selector: (state) {
-                  return state is PartidaJugando
-                      ? (widget.color == Tipo.blancas
-                            ? state.piezasNegrasComidas
-                            : state.piezasBlancasComidas)
-                      : [];
+                  return state is PartidaJugando ? (widget.color == Tipo.blancas ? state.piezasNegrasComidas : state.piezasBlancasComidas) : [];
                 },
                 builder: (context, state) {
                   return Padding(
@@ -110,14 +86,7 @@ class _LateralState extends State<Lateral> {
                           spacing: 5,
                           runSpacing: 5,
                           direction: Axis.horizontal,
-                          children: List.generate(
-                            state.length,
-                            (index) => FaIcon(
-                              state[index],
-                              color: Colors.white70,
-                              size: 32,
-                            ),
-                          ),
+                          children: List.generate(state.length, (index) => FaIcon(state[index], color: Colors.white70, size: 32)),
                         ),
                       ),
                     ),

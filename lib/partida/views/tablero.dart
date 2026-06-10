@@ -10,15 +10,13 @@ class Tablero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double medidaTablero = MediaQuery.of(context).size.height;
+    double medidaTablero = MediaQuery.of(context).size.width;
     double medidaCasilla = medidaTablero / 8;
 
     return Stack(
       children: [
         Container(
-          decoration: BoxDecoration(
-            boxShadow: [BoxShadow(spreadRadius: 4, blurRadius: 10)],
-          ),
+          decoration: BoxDecoration(boxShadow: [BoxShadow(spreadRadius: 4, blurRadius: 10)]),
           height: medidaTablero,
           width: medidaTablero,
           child: Column(
@@ -28,11 +26,7 @@ class Tablero extends StatelessWidget {
                   return Container(
                     height: medidaCasilla,
                     width: medidaCasilla,
-                    color:
-                        (indexFila.isEven && indexCasilla.isEven) ||
-                            (indexFila.isOdd && indexCasilla.isOdd)
-                        ? const Color(0xFFebecd0)
-                        : const Color(0xFF739552),
+                    color: (indexFila.isEven && indexCasilla.isEven) || (indexFila.isOdd && indexCasilla.isOdd) ? const Color(0xFFebecd0) : const Color(0xFF739552),
                   );
                 }),
               );
@@ -43,8 +37,7 @@ class Tablero extends StatelessWidget {
           height: medidaTablero,
           width: medidaTablero,
           child: BlocSelector<BlocPartida, PartidaState, List<List<Pieza?>>>(
-            selector: (state) =>
-                state is PartidaJugando ? state.tableroPiezas : [],
+            selector: (state) => state is PartidaJugando ? state.tableroPiezas : [],
             builder: (context, state) {
               if (state.isNotEmpty) {
                 return Column(
@@ -65,32 +58,24 @@ class Tablero extends StatelessWidget {
         SizedBox(
           height: medidaTablero,
           width: medidaTablero,
-          child:
-              BlocSelector<
-                BlocPartida,
-                PartidaState,
-                List<List<CasillaMovible?>>
-              >(
-                selector: (state) => state is PartidaJugando
-                    ? state.tableroCasillasMovibles
-                    : [],
-                builder: (context, state) {
-                  if (state.isNotEmpty) {
-                    return Column(
-                      children: List.generate(8, (indexFila) {
-                        return Row(
-                          children: List.generate(8, (indexCasilla) {
-                            return state[indexFila][indexCasilla] ??
-                                CasillaVacia();
-                          }),
-                        );
+          child: BlocSelector<BlocPartida, PartidaState, List<List<CasillaMovible?>>>(
+            selector: (state) => state is PartidaJugando ? state.tableroCasillasMovibles : [],
+            builder: (context, state) {
+              if (state.isNotEmpty) {
+                return Column(
+                  children: List.generate(8, (indexFila) {
+                    return Row(
+                      children: List.generate(8, (indexCasilla) {
+                        return state[indexFila][indexCasilla] ?? CasillaVacia();
                       }),
                     );
-                  } else {
-                    return SizedBox.shrink();
-                  }
-                },
-              ),
+                  }),
+                );
+              } else {
+                return SizedBox.shrink();
+              }
+            },
+          ),
         ),
       ],
     );
