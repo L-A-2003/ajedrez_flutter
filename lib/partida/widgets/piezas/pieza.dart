@@ -72,13 +72,27 @@ abstract class Pieza extends StatelessWidget {
 
     return TapRegion(
       behavior: HitTestBehavior.translucent,
-      onTapInside: (event) => BlocProvider.of<BlocPartida>(context).add(
-        PartidaVerMovimientosPosibles(
-          pieza: this,
-          coordenadasPieza: (y, x),
-          movimientosPosibles: obtenerPosiblesMovimientos(),
-        ),
-      ),
+      onTapInside: (event) {
+        final bloc = BlocProvider.of<BlocPartida>(context);
+
+        bloc.add(
+          PartidaVerMovimientosPosibles(
+            pieza: this,
+            coordenadasPieza: (y, x),
+            movimientosPosibles: obtenerPosiblesMovimientos(),
+          ),
+        );
+
+        final reyCoords = bloc.obtenerCoordenadasRey(color);
+        if (reyCoords != (-1, -1) && bloc.reyEnJaque(reyCoords.$1, reyCoords.$2, color)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Rey en jaque!'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      },
       child: SizedBox(
         height: medidaCasilla,
         width: medidaCasilla,
