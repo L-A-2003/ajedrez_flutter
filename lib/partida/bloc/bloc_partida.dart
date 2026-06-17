@@ -42,6 +42,7 @@ final class PartidaTiempoAgotado extends PartidaEvent {
 sealed class PartidaState {}
 
 // Estados de jugando, empate y ganador
+// Solo se puede tener un estado a la vez, PartidaJugando es el que se actualiza constantemente.
 final class PartidaJugando extends PartidaState {
   final Tipo turno;
   final List<List<Pieza?>> tableroPiezas;
@@ -80,7 +81,7 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
     Pieza? piezaSeleccionada;
     (int, int) coordenadasPiezaSeleccionada = (-1, -1);
 
-    on<PartidaIniciar>((event, emit) {
+    on<PartidaIniciar>((event, emit) { // Crea el tablero inicial
       List<List<Pieza?>>
       tableroPiezas = // Crea el tablero tableroPirezas[0] devuelve la primera fila, tableroPiezas[0][0] devuelve la primera casilla de la primera fila
       List.generate(8, (indexColumna) {
@@ -155,7 +156,9 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
       );
     });
 
-    on<PartidaVerMovimientosPosibles>((event, emit) {
+    on<PartidaVerMovimientosPosibles>((event, emit) { // Actualiza el estado con las casillas movibles de la pieza seleccionada.
+    // Para llamar a esta funcion ya se le pasa la pieza, sus coordenadas y sus movimientos posibles,
+    // entonces solo se actualiza el estado.
       PartidaJugando estadoActual = state as PartidaJugando;
 
       if (event.pieza.color == estadoActual.turno) {
@@ -166,7 +169,8 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         if (event.coordenadasPieza != coordenadasPiezaSeleccionada) {
           tableroCasillasMovibles = List.generate(8, (indexColumna) {
             return List.generate(8, (indexFila) {
-              if (event.movimientosPosibles.contains((
+              if (event.movimientosPosibles.contains(( // Compara cada elemento con movimientos posibles y si es
+              // devuelve una casilla movible, sino devuelve null
                 indexFila,
                 indexColumna,
               ))) {
@@ -196,9 +200,11 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
     });
 
     on<PartidaMoverPieza>((event, emit) {
+      // Crea una copia del estado actual del juego.
       PartidaJugando estadoActual = state as PartidaJugando;
-
-      List<List<Pieza?>> tableroPiezas = List.from(estadoActual.tableroPiezas);
+      List<List<Pieza?>> tableroPiezas = estadoActual.tableroPiezas
+      .map((fila) => List<Pieza?>.from(fila))
+      .toList();
       List<FaIconData> piezasNegrasComidas = List.from(
         estadoActual.piezasNegrasComidas,
       );
@@ -206,11 +212,10 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         estadoActual.piezasBlancasComidas,
       );
 
-      if (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] is Pieza) {
+      if (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] is Pieza) { // Si se come una pieza, añade el icono de
+      // piezas comidas dependiendo de si se esta jugando com oblancas o negras
         FaIconData piezaComida =
-            (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] as Pieza)
-                .icono;
-
+            (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] as Pieza).icono;
         if (estadoActual.turno == Tipo.blancas) {
           piezasNegrasComidas.add(piezaComida);
         } else {
@@ -218,15 +223,14 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         }
       }
 
-      tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] = generarPieza(
+      tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] = generarPieza( // Genera una nueva pieza en el lugar donde se movio
         piezaSeleccionada as Pieza,
         event.coordenadas.$1,
         event.coordenadas.$2,
       );
 
-      tableroPiezas[coordenadasPiezaSeleccionada
-              .$1][coordenadasPiezaSeleccionada.$2] =
-          null;
+      // Y elimina el original
+      tableroPiezas[coordenadasPiezaSeleccionada.$1][coordenadasPiezaSeleccionada.$2] = null;
 
       emit(
         PartidaJugando(
@@ -246,7 +250,7 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
     });
   }
 
-  Pieza? generarPieza(Pieza pieza, int y, int x) {
+  Pieza? generarPieza(Pieza pieza, int y, int x) { // Genera una pieza del mismo tipo que se le pasa pero en posicion diferente
     switch (pieza.runtimeType) {
       case const (Peon):
         return Peon(color: pieza.color, x: x, y: y);
@@ -701,6 +705,6 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
   }
 
   bool piezaAtacandoReyEsRey(Pieza pieza) {
-    return pieza.runtimeType == Caballo;
+    return pieza.runtimeType == Rey;
   }
 }
