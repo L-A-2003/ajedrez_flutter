@@ -11,7 +11,7 @@ class Tablero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double medidaTablero = MediaQuery.of(context).size.height;
+    double medidaTablero = MediaQuery.of(context).size.width;
     double medidaCasilla = medidaTablero / 8;
 
     return Stack(

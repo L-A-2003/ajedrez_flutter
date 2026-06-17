@@ -173,7 +173,11 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
       PartidaJugando estadoActual = state as PartidaJugando;
 
       if (event.pieza.color == estadoActual.turno) {
-        List<(int, int)> movimientos = List.from(event.movimientosPosibles);
+        List<(int, int)> movimientos = generarMovimientosPosiblesReales(
+          List.from(event.movimientosPosibles),
+          estadoActual.tableroPiezas,
+          event.pieza,
+        );
         // Si es un peon con un objetivo de en passant cercano, se agrega esa casilla.
         if (event.pieza is Peon && enPassantObjetivo != null) {
           int peonY = event.coordenadasPieza.$1;
@@ -194,14 +198,14 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         // Enroque
         if (event.pieza is Rey) {
           int reyY = event.coordenadasPieza.$1;
-          int reyX = event.coordenadasPieza.$2;
           Tipo color = event.pieza.color;
 
           bool reyMovido = color == Tipo.blancas
               ? reyBlancoMovido
               : reyNegroMovido;
 
-          if (!reyMovido && !reyEnJaque(reyY, reyX, color)) {
+          if (!reyMovido &&
+              !reyEnJaque(reyY, event.coordenadasPieza.$2, color)) {
             bool torreDerMovida = color == Tipo.blancas
                 ? torreBlancaDerMovida
                 : torreNegraDerMovida;
@@ -223,10 +227,12 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
                 )) {
               movimientos.add((6, reyY));
             }
+
             bool torreIzqMovida = color == Tipo.blancas
                 ? torreBlancaIzqMovida
                 : torreNegraIzqMovida;
             bool torreIzqExiste = estadoActual.tableroPiezas[reyY][0] is Torre;
+
             if (!torreIzqMovida &&
                 torreIzqExiste &&
                 estadoActual.tableroPiezas[reyY][1] == null &&
@@ -254,12 +260,7 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         if (event.coordenadasPieza != coordenadasPiezaSeleccionada) {
           tableroCasillasMovibles = List.generate(8, (indexColumna) {
             return List.generate(8, (indexFila) {
-              if (movimientos.contains((
-                // Compara cada elemento con movimientos posibles y si es
-                // devuelve una casilla movible, sino devuelve null
-                indexFila,
-                indexColumna,
-              ))) {
+              if (movimientos.contains((indexFila, indexColumna))) {
                 return CasillaMovible(x: indexFila, y: indexColumna);
               } else {
                 return null;
@@ -887,5 +888,241 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
 
   bool piezaAtacandoReyEsRey(Pieza pieza) {
     return pieza.runtimeType == Rey;
+  }
+
+  List<(int, int)> generarMovimientosPosiblesReales(
+    List<(int, int)> movimientosPosibles,
+    List<List<Pieza?>> tableroPiezas,
+    Pieza pieza,
+  ) {
+    List<(int, int)> movimientosPosiblesReales = [];
+
+    switch (pieza.runtimeType) {
+      case const (Peon):
+        if (pieza.x < 7) {
+          if (casillaValida(
+                tableroPiezas,
+                movimientosPosibles.first.$2,
+                pieza.x + 1,
+                pieza.color,
+              ) ==
+              1) {
+            movimientosPosiblesReales.add((
+              pieza.x + 1,
+              movimientosPosibles.first.$2,
+            ));
+          }
+        }
+        if (pieza.x > 0) {
+          if (casillaValida(
+                tableroPiezas,
+                movimientosPosibles.first.$2,
+                pieza.x - 1,
+                pieza.color,
+              ) ==
+              1) {
+            movimientosPosiblesReales.add((
+              pieza.x - 1,
+              movimientosPosibles.first.$2,
+            ));
+          }
+        }
+
+        while (movimientosPosibles.isNotEmpty) {
+          (int, int) movimiento = movimientosPosibles.first;
+          int valorCasilla = casillaValida(
+            tableroPiezas,
+            movimiento.$2,
+            movimiento.$1,
+            pieza.color,
+          );
+
+          if (valorCasilla == 2) {
+            movimientosPosiblesReales.add(movimiento);
+            movimientosPosibles.removeAt(0);
+          } else {
+            movimientosPosibles.clear();
+          }
+        }
+        break;
+      case const (Caballo):
+        for ((int, int) movimiento in movimientosPosibles) {
+          if (casillaValida(
+                tableroPiezas,
+                movimiento.$2,
+                movimiento.$1,
+                pieza.color,
+              ) !=
+              0) {
+            movimientosPosiblesReales.add(movimiento);
+          }
+        }
+        break;
+      default:
+        movimientosPosiblesReales =
+            generarMovimientosPosiblesRealesTorreAlfilReinaRey(
+              movimientosPosibles,
+              tableroPiezas,
+              pieza,
+            );
+        break;
+    }
+
+    return movimientosPosiblesReales;
+  }
+
+  List<(int, int)> generarMovimientosPosiblesRealesTorreAlfilReinaRey(
+    List<(int, int)> movimientosPosibles,
+    List<List<Pieza?>> tableroPiezas,
+    Pieza pieza,
+  ) {
+    List<(int, int)> movimientosPosiblesReales = [];
+
+    List<(int, int)> movimientosPosiblesArriba = [];
+    List<(int, int)> movimientosPosiblesAbajo = [];
+    List<(int, int)> movimientosPosiblesIzquierda = [];
+    List<(int, int)> movimientosPosiblesDerecha = [];
+
+    List<(int, int)> movimientosPosiblesArribaIzquierda = [];
+    List<(int, int)> movimientosPosiblesArribaDerecha = [];
+    List<(int, int)> movimientosPosiblesAbajoIzquierda = [];
+    List<(int, int)> movimientosPosiblesAbajoDerecha = [];
+
+    switch (pieza.runtimeType) {
+      case const (Torre):
+      case const (Rey):
+        movimientosPosiblesArriba = movimientosPosibles
+            .where((element) => element.$2 < pieza.y)
+            .toList();
+        movimientosPosiblesAbajo = movimientosPosibles
+            .where((element) => element.$2 > pieza.y)
+            .toList();
+        movimientosPosiblesIzquierda = movimientosPosibles
+            .where((element) => element.$1 < pieza.x)
+            .toList();
+        movimientosPosiblesDerecha = movimientosPosibles
+            .where((element) => element.$1 > pieza.x)
+            .toList();
+        break;
+      case const (Alfil):
+        movimientosPosiblesArribaIzquierda = movimientosPosibles
+            .where((element) => element.$2 < pieza.y && element.$1 < pieza.x)
+            .toList();
+        movimientosPosiblesArribaDerecha = movimientosPosibles
+            .where((element) => element.$2 < pieza.y && element.$1 > pieza.x)
+            .toList();
+        movimientosPosiblesAbajoIzquierda = movimientosPosibles
+            .where((element) => element.$2 > pieza.y && element.$1 < pieza.x)
+            .toList();
+        movimientosPosiblesAbajoDerecha = movimientosPosibles
+            .where((element) => element.$2 > pieza.y && element.$1 > pieza.x)
+            .toList();
+        break;
+      case const (Reina):
+        movimientosPosiblesArriba = movimientosPosibles
+            .where((element) => element.$2 < pieza.y && element.$1 == pieza.x)
+            .toList();
+        movimientosPosiblesAbajo = movimientosPosibles
+            .where((element) => element.$2 > pieza.y && element.$1 == pieza.x)
+            .toList();
+        movimientosPosiblesIzquierda = movimientosPosibles
+            .where((element) => element.$1 < pieza.x && element.$2 == pieza.y)
+            .toList();
+        movimientosPosiblesDerecha = movimientosPosibles
+            .where((element) => element.$1 > pieza.x && element.$2 == pieza.y)
+            .toList();
+
+        movimientosPosibles.removeWhere(
+          (element) => [
+            ...movimientosPosiblesArriba,
+            ...movimientosPosiblesAbajo,
+            ...movimientosPosiblesIzquierda,
+            ...movimientosPosiblesDerecha,
+          ].contains(element),
+        );
+
+        movimientosPosiblesArribaIzquierda = movimientosPosibles
+            .where((element) => element.$2 < pieza.y && element.$1 < pieza.x)
+            .toList();
+        movimientosPosiblesArribaDerecha = movimientosPosibles
+            .where((element) => element.$2 < pieza.y && element.$1 > pieza.x)
+            .toList();
+        movimientosPosiblesAbajoIzquierda = movimientosPosibles
+            .where((element) => element.$2 > pieza.y && element.$1 < pieza.x)
+            .toList();
+        movimientosPosiblesAbajoDerecha = movimientosPosibles
+            .where((element) => element.$2 > pieza.y && element.$1 > pieza.x)
+            .toList();
+        break;
+    }
+
+    List<List<(int, int)>> movimientos = [
+      movimientosPosiblesArriba,
+      movimientosPosiblesAbajo,
+      movimientosPosiblesIzquierda,
+      movimientosPosiblesDerecha,
+      movimientosPosiblesArribaIzquierda,
+      movimientosPosiblesArribaDerecha,
+      movimientosPosiblesAbajoIzquierda,
+      movimientosPosiblesAbajoDerecha,
+    ];
+
+    while (movimientos.isNotEmpty) {
+      List<(int, int)> movimientosDireccionales = movimientos.first;
+
+      while (movimientosDireccionales.isNotEmpty) {
+        (int, int) movimiento = movimientosDireccionales.first;
+        int valorCasilla = casillaValida(
+          tableroPiezas,
+          movimiento.$2,
+          movimiento.$1,
+          pieza.color,
+        );
+
+        if (valorCasilla != 0) {
+          bool valido = true;
+          if (pieza.runtimeType == Rey) {
+            if (reyEnJaque(movimiento.$2, movimiento.$1, pieza.color)) {
+              valido = false;
+            }
+          }
+
+          if (valido) {
+            movimientosPosiblesReales.add(movimiento);
+          }
+        }
+
+        if (valorCasilla == 2) {
+          movimientosDireccionales.removeAt(0);
+        } else {
+          movimientosDireccionales.clear();
+        }
+      }
+
+      movimientos.removeAt(0);
+    }
+
+    return movimientosPosiblesReales;
+  }
+
+  int casillaValida(
+    List<List<Pieza?>> tableroPiezas,
+    int y,
+    int x,
+    Tipo colorPieza,
+  ) {
+    /*
+      0 = Pieza aliada
+      1 = Pieza enemiga
+      2 = No encontro pieza, sigue buscando
+    */
+
+    if (tableroPiezas[y][x] != null) {
+      Pieza pieza = tableroPiezas[y][x]!;
+
+      return pieza.color != colorPieza ? 1 : 0;
+    }
+
+    return 2;
   }
 }

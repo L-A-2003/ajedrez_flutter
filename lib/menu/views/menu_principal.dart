@@ -7,39 +7,53 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 
-class MenuPrincipal extends StatelessWidget {
+class MenuPrincipal extends StatefulWidget {
   const MenuPrincipal({super.key});
 
-  static const int cantidadCasillasAlto = 8;
-  static const int maximoCasillasHorizontal = 50;
+  @override
+  State<MenuPrincipal> createState() => _MenuPrincipalState();
+}
+
+class _MenuPrincipalState extends State<MenuPrincipal> {
+  final int cantidadCasillasAlto = 8;
+  final int maximoCasillasHorizontal = 50;
+  final GlobalKey<FormBuilderFieldState> inputKey = GlobalKey<FormBuilderFieldState>(); // GlobalKey para el campo de texto
+
+  late int cantidadCasillasLargoEntero;
+  late double largoCasillaLateral;
+  late double medidaCasilla; // Calcula la medida de la casilla basada en la altura de la pantalla
+  late Map<(int, int), Widget> piezasAleatorias;
+
+  bool primeraVez = true;
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((Duration timeStamp) {
+      setState(() {
+        medidaCasilla = MediaQuery.of(context).size.height / cantidadCasillasAlto;
+
+        double cantidadCasillasLargo = MediaQuery.of(context).size.width / medidaCasilla;
+
+        cantidadCasillasLargoEntero = cantidadCasillasLargo.floor();
+
+        if (cantidadCasillasLargoEntero > maximoCasillasHorizontal) {
+          cantidadCasillasLargoEntero = maximoCasillasHorizontal;
+        }
+
+        primeraVez = false;
+        largoCasillaLateral = medidaCasilla * ((cantidadCasillasLargo - cantidadCasillasLargoEntero) / 2);
+        piezasAleatorias = generarPiezasAleatorias(cantidadCasillasLargoEntero, medidaCasilla);
+      });
+    });
+
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final GlobalKey<FormBuilderFieldState> inputKey =
-        GlobalKey<FormBuilderFieldState>(); // GlobalKey para el campo de texto
-
-    double medidaCasilla =
-        MediaQuery.of(context).size.height /
-        cantidadCasillasAlto; // Calcula la medida de la casilla basada en la altura de la pantalla
-    // (Por lo que solo va a haber 8 filas)
-
-    double cantidadCasillasLargo =
-        MediaQuery.of(context).size.width / medidaCasilla;
-
-    int cantidadCasillasLargoEntero = cantidadCasillasLargo.floor();
-
-    if (cantidadCasillasLargoEntero > maximoCasillasHorizontal) {
-      cantidadCasillasLargoEntero = maximoCasillasHorizontal;
+    if (primeraVez) {
+      return SizedBox.shrink();
     }
-
-    double largoCasillaLateral =
-        medidaCasilla *
-        ((cantidadCasillasLargo - cantidadCasillasLargoEntero) / 2);
-
-    Map<(int, int), Widget> piezasAleatorias = generarPiezasAleatorias(
-      cantidadCasillasLargoEntero,
-      medidaCasilla,
-    );
 
     return Stack(
       // Stack para superponer el tablero y el menu
@@ -49,27 +63,14 @@ class MenuPrincipal extends StatelessWidget {
           children: List.generate(8, (indexFila) {
             // Es una columna con 8 filas. Cada fila es un Row con las casillas.
             return Row(
-              children: List.generate(cantidadCasillasLargoEntero + 2, (
-                indexCasilla,
-              ) {
+              children: List.generate(cantidadCasillasLargoEntero + 2, (indexCasilla) {
                 return Container(
                   // Este container es cada casilla del tablero.
                   height: medidaCasilla,
-                  width:
-                      (indexCasilla == 0 ||
-                          indexCasilla == cantidadCasillasLargoEntero + 1)
-                      ? largoCasillaLateral
-                      : medidaCasilla,
-                  color:
-                      (indexFila.isEven && indexCasilla.isEven) ||
-                          (indexFila.isOdd && indexCasilla.isOdd)
-                      ? constantes.TemaAjedrez.casillaClara
-                      : constantes.TemaAjedrez.casillaOscura,
+                  width: (indexCasilla == 0 || indexCasilla == cantidadCasillasLargoEntero + 1) ? largoCasillaLateral : medidaCasilla,
+                  color: (indexFila.isEven && indexCasilla.isEven) || (indexFila.isOdd && indexCasilla.isOdd) ? constantes.TemaAjedrez.casillaClara : constantes.TemaAjedrez.casillaOscura,
                   child:
-                      piezasAleatorias.containsKey((
-                        indexFila,
-                        indexCasilla,
-                      )) // Esto muestra una pieza en la casilla
+                      piezasAleatorias.containsKey((indexFila, indexCasilla)) // Esto muestra una pieza en la casilla
                       ? piezasAleatorias[(indexFila, indexCasilla)]
                       : SizedBox.shrink(),
                 );
@@ -80,24 +81,15 @@ class MenuPrincipal extends StatelessWidget {
         Center(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final anchoCartel = (constraints.maxWidth * 0.7).clamp(
-                280.0,
-                450.0,
-              );
-              final altoCartel = (constraints.maxHeight * 0.6).clamp(
-                300.0,
-                500.0,
-              );
+              final anchoCartel = (constraints.maxWidth * 0.7).clamp(280.0, 450.0);
+              final altoCartel = (constraints.maxHeight * 0.6).clamp(300.0, 500.0);
 
               return Container(
                 width: anchoCartel,
                 height: altoCartel,
                 decoration: BoxDecoration(
                   color: constantes.TemaAjedrez.casillaClara,
-                  border: Border.all(
-                    width: 5,
-                    color: constantes.TemaAjedrez.casillaOscura,
-                  ),
+                  border: Border.all(width: 5, color: constantes.TemaAjedrez.casillaOscura),
                   boxShadow: [BoxShadow(spreadRadius: 4, blurRadius: 10)],
                 ),
                 padding: const EdgeInsets.all(20),
@@ -108,13 +100,7 @@ class MenuPrincipal extends StatelessWidget {
                       flex: 2,
                       child: FittedBox(
                         fit: BoxFit.contain,
-                        child: Text(
-                          "Ajedrez",
-                          style: TextStyle(
-                            fontSize: 100,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: Text("Ajedrez", style: TextStyle(fontSize: 100, fontWeight: FontWeight.bold)),
                       ),
                     ),
                     SizedBox(
@@ -124,25 +110,15 @@ class MenuPrincipal extends StatelessWidget {
                         initialValue: "10",
                         name: "duracion",
                         textAlign: TextAlign.center,
-                        validator: FormBuilderValidators.positiveNumber(
-                          errorText: "Ingrese una duración válida",
-                        ),
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                          labelText: "Duración en minutos",
-                          floatingLabelAlignment: FloatingLabelAlignment.center,
-                        ),
+                        validator: FormBuilderValidators.positiveNumber(errorText: "Ingrese una duración válida"),
+                        decoration: InputDecoration(border: OutlineInputBorder(), labelText: "Duración", floatingLabelAlignment: FloatingLabelAlignment.center),
                       ),
                     ),
                     Flexible(
                       flex: 2,
                       child: FittedBox(
                         fit: BoxFit.contain,
-                        child: IconButton(
-                          onPressed: () => iniciarPartida(context, inputKey),
-                          icon: Icon(Icons.play_arrow),
-                          iconSize: 100,
-                        ),
+                        child: IconButton(onPressed: () => iniciarPartida(context, inputKey), icon: Icon(Icons.play_arrow), iconSize: 100),
                       ),
                     ),
                   ],
@@ -162,12 +138,8 @@ class MenuPrincipal extends StatelessWidget {
   ) {
     Map<(int, int), Widget> piezas = {};
 
-    while (piezas.length <
-        (cantidadCasillasHorizontal * cantidadCasillasAlto) / 3) {
-      (int, int) coordenadaAleatoria = (
-        Random().nextInt(cantidadCasillasAlto),
-        Random().nextInt(cantidadCasillasHorizontal) + 1,
-      );
+    while (piezas.length < (cantidadCasillasHorizontal * cantidadCasillasAlto) / 3) {
+      (int, int) coordenadaAleatoria = (Random().nextInt(cantidadCasillasAlto), Random().nextInt(cantidadCasillasHorizontal) + 1);
 
       if (!piezas.containsKey(coordenadaAleatoria)) {
         late FaIconData icono;
@@ -196,15 +168,7 @@ class MenuPrincipal extends StatelessWidget {
         piezas[coordenadaAleatoria] = SizedBox(
           height: medidaCasilla,
           width: medidaCasilla,
-          child: Center(
-            child: FaIcon(
-              icono,
-              color: Random().nextBool()
-                  ? constantes.TemaAjedrez.piezaBlancas
-                  : constantes.TemaAjedrez.piezaNegras,
-              size: medidaCasilla * 0.8,
-            ),
-          ),
+          child: Center(child: FaIcon(icono, color: Random().nextBool() ? constantes.TemaAjedrez.piezaBlancas : constantes.TemaAjedrez.piezaNegras, size: 48)),
         );
       }
     }
@@ -212,18 +176,11 @@ class MenuPrincipal extends StatelessWidget {
     return piezas;
   }
 
-  void iniciarPartida(
-    BuildContext context,
-    GlobalKey<FormBuilderFieldState> inputKey,
-  ) {
+  void iniciarPartida(BuildContext context, GlobalKey<FormBuilderFieldState> inputKey) {
     inputKey.currentState!.save();
 
     if (inputKey.currentState!.validate()) {
-      BlocProvider.of<AplicacionBloc>(context).add(
-        AplicacionIniciarPartida(
-          duracion: int.parse(inputKey.currentState!.value),
-        ),
-      );
+      BlocProvider.of<AplicacionBloc>(context).add(AplicacionIniciarPartida(duracion: int.parse(inputKey.currentState!.value)));
     }
   }
 }

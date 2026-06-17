@@ -9,15 +9,18 @@ class CasillaMovible extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double medidaCasilla = MediaQuery.of(context).size.height / 8;
+    double medidaCasilla = MediaQuery.of(context).size.width / 8;
 
-    return TapRegion( // Tap region para detectar toques dentro del area
-      behavior: HitTestBehavior.opaque,  // Toda la casilla no solo el widget hijo, el "circulo", es clickeable
-      onTapInside: (event) => BlocProvider.of<BlocPartida>(
-        context,
-      ).add(PartidaMoverPieza(coordenadas: (y, x))), // Al hacer click en la casilla movible, llama a moverpieza con las 
+    return TapRegion(
+      // Tap region para detectar toques dentro del area
+      behavior: HitTestBehavior
+          .opaque, // Toda la casilla no solo el widget hijo, el "circulo", es clickeable
+      onTapInside: (event) => BlocProvider.of<BlocPartida>(context).add(
+        PartidaMoverPieza(coordenadas: (y, x)),
+      ), // Al hacer click en la casilla movible, llama a moverpieza con las
       // cordenadas del punto
-      child: SizedBox( // El widget hijo, lo clickable mide toda una casilla y es un circulo con opacidad
+      child: SizedBox(
+        // El widget hijo, lo clickable mide toda una casilla y es un circulo con opacidad
         height: medidaCasilla,
         width: medidaCasilla,
         child: Center(

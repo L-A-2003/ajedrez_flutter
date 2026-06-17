@@ -68,7 +68,7 @@ abstract class Pieza extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double medidaCasilla = MediaQuery.of(context).size.height / 8;
+    double medidaCasilla = MediaQuery.of(context).size.width / 8;
 
     return TapRegion(
       behavior: HitTestBehavior.translucent,
@@ -86,7 +86,7 @@ abstract class Pieza extends StatelessWidget {
           child: FaIcon(
             icono,
             color: color == Tipo.blancas ? Colors.deepPurple : Colors.black,
-            size: 48,
+            size: 36,
           ),
         ),
       ),
