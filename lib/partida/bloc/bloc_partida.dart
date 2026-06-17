@@ -83,6 +83,12 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
     (int, int)?
     enPassantObjetivo; // la casilla a la que se va a mover el peon luego de en passant
     (int, int)? enPassantPeon; // El peon que se va a comer
+    bool reyBlancoMovido = false;
+    bool reyNegroMovido = false;
+    bool torreBlancaIzqMovida = false;
+    bool torreBlancaDerMovida = false;
+    bool torreNegraIzqMovida = false;
+    bool torreNegraDerMovida = false;
 
     on<PartidaIniciar>((event, emit) {
       // Crea el tablero inicial
@@ -185,6 +191,62 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
           }
         }
 
+        // Enroque
+        if (event.pieza is Rey) {
+          int reyY = event.coordenadasPieza.$1;
+          int reyX = event.coordenadasPieza.$2;
+          Tipo color = event.pieza.color;
+
+          bool reyMovido = color == Tipo.blancas
+              ? reyBlancoMovido
+              : reyNegroMovido;
+
+          if (!reyMovido && !reyEnJaque(reyY, reyX, color)) {
+            bool torreDerMovida = color == Tipo.blancas
+                ? torreBlancaDerMovida
+                : torreNegraDerMovida;
+            bool torreDerExiste = estadoActual.tableroPiezas[reyY][7] is Torre;
+
+            if (!torreDerMovida &&
+                torreDerExiste &&
+                casillaLibreYSegura(
+                  reyY,
+                  5,
+                  color,
+                  estadoActual.tableroPiezas,
+                ) &&
+                casillaLibreYSegura(
+                  reyY,
+                  6,
+                  color,
+                  estadoActual.tableroPiezas,
+                )) {
+              movimientos.add((6, reyY));
+            }
+            bool torreIzqMovida = color == Tipo.blancas
+                ? torreBlancaIzqMovida
+                : torreNegraIzqMovida;
+            bool torreIzqExiste = estadoActual.tableroPiezas[reyY][0] is Torre;
+            if (!torreIzqMovida &&
+                torreIzqExiste &&
+                estadoActual.tableroPiezas[reyY][1] == null &&
+                casillaLibreYSegura(
+                  reyY,
+                  2,
+                  color,
+                  estadoActual.tableroPiezas,
+                ) &&
+                casillaLibreYSegura(
+                  reyY,
+                  3,
+                  color,
+                  estadoActual.tableroPiezas,
+                )) {
+              movimientos.add((2, reyY));
+            }
+          }
+        }
+
         // Solo se pueden ver los movimientos posibles de las piezas del turno actual
         List<List<CasillaMovible?>> tableroCasillasMovibles = [];
 
@@ -282,6 +344,48 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
               .$1][coordenadasPiezaSeleccionada.$2] =
           null;
 
+      // Cambiar estado primer movimiento de rey y torres
+      int origenY = coordenadasPiezaSeleccionada.$1;
+      int origenX = coordenadasPiezaSeleccionada.$2;
+      if (piezaSeleccionada is Rey) {
+        if (estadoActual.turno == Tipo.blancas) {
+          reyBlancoMovido = true;
+        } else {
+          reyNegroMovido = true;
+        }
+      } else if (piezaSeleccionada is Torre) {
+        if ((origenY, origenX) == (7, 0)) torreBlancaIzqMovida = true;
+        if ((origenY, origenX) == (7, 7)) torreBlancaDerMovida = true;
+        if ((origenY, origenX) == (0, 0)) torreNegraIzqMovida = true;
+        if ((origenY, origenX) == (0, 7)) torreNegraDerMovida = true;
+      }
+      //--
+
+      // Enroque
+      bool esEnroque =
+          piezaSeleccionada is Rey &&
+          (event.coordenadas.$2 - coordenadasPiezaSeleccionada.$2).abs() == 2;
+
+      if (esEnroque) {
+        int fila = event.coordenadas.$1;
+        bool haciaLaDerecha =
+            event.coordenadas.$2 > coordenadasPiezaSeleccionada.$2;
+
+        int columnaTorreOrigen = haciaLaDerecha ? 7 : 0;
+        int columnaTorreDestino = haciaLaDerecha
+            ? event.coordenadas.$2 - 1
+            : event.coordenadas.$2 + 1;
+
+        Pieza torre = tableroPiezas[fila][columnaTorreOrigen] as Pieza;
+        tableroPiezas[fila][columnaTorreDestino] = generarPieza(
+          torre,
+          fila,
+          columnaTorreDestino,
+        );
+        tableroPiezas[fila][columnaTorreOrigen] = null;
+      }
+      //--
+
       // Abilitar en passant para el enemigo
       bool esDoblePaso =
           piezaSeleccionada is Peon &&
@@ -334,6 +438,16 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
     }
 
     return null;
+  }
+
+  bool casillaLibreYSegura(
+    int y,
+    int x,
+    Tipo colorRey,
+    List<List<Pieza?>> tableroPiezas,
+  ) {
+    if (tableroPiezas[y][x] != null) return false;
+    return !reyEnJaque(y, x, colorRey);
   }
 
   bool reyEnJaque(int y, int x, Tipo colorRey) {
