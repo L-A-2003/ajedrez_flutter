@@ -1,4 +1,5 @@
 import 'package:ajedrez_flutter/partida/bloc/bloc_partida.dart';
+import 'package:ajedrez_flutter/constantes.dart' as constantes;
 import 'package:ajedrez_flutter/partida/widgets/casillas/casilla_movible.dart';
 import 'package:ajedrez_flutter/partida/widgets/casillas/casilla_vacia.dart';
 import 'package:ajedrez_flutter/partida/widgets/piezas/pieza.dart';
@@ -31,8 +32,8 @@ class Tablero extends StatelessWidget {
                     color:
                         (indexFila.isEven && indexCasilla.isEven) ||
                             (indexFila.isOdd && indexCasilla.isOdd)
-                        ? const Color(0xFFebecd0)
-                        : const Color(0xFF739552),
+                        ? constantes.TemaAjedrez.casillaClara
+                        : constantes.TemaAjedrez.casillaOscura,
                   );
                 }),
               );

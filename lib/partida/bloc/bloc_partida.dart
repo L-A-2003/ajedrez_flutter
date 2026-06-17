@@ -80,8 +80,12 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
       ) {
     Pieza? piezaSeleccionada;
     (int, int) coordenadasPiezaSeleccionada = (-1, -1);
+    (int, int)?
+    enPassantObjetivo; // la casilla a la que se va a mover el peon luego de en passant
+    (int, int)? enPassantPeon; // El peon que se va a comer
 
-    on<PartidaIniciar>((event, emit) { // Crea el tablero inicial
+    on<PartidaIniciar>((event, emit) {
+      // Crea el tablero inicial
       List<List<Pieza?>>
       tableroPiezas = // Crea el tablero tableroPirezas[0] devuelve la primera fila, tableroPiezas[0][0] devuelve la primera casilla de la primera fila
       List.generate(8, (indexColumna) {
@@ -156,12 +160,31 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
       );
     });
 
-    on<PartidaVerMovimientosPosibles>((event, emit) { // Actualiza el estado con las casillas movibles de la pieza seleccionada.
-    // Para llamar a esta funcion ya se le pasa la pieza, sus coordenadas y sus movimientos posibles,
-    // entonces solo se actualiza el estado.
+    on<PartidaVerMovimientosPosibles>((event, emit) {
+      // Actualiza el estado con las casillas movibles de la pieza seleccionada.
+      // Para llamar a esta funcion ya se le pasa la pieza, sus coordenadas y sus movimientos posibles,
+      // entonces solo se actualiza el estado.
       PartidaJugando estadoActual = state as PartidaJugando;
 
       if (event.pieza.color == estadoActual.turno) {
+        List<(int, int)> movimientos = List.from(event.movimientosPosibles);
+        // Si es un peon con un objetivo de en passant cercano, se agrega esa casilla.
+        if (event.pieza is Peon && enPassantObjetivo != null) {
+          int peonY = event.coordenadasPieza.$1;
+          int peonX = event.coordenadasPieza.$2;
+          int objetivoY = enPassantObjetivo!.$1;
+          int objetivoX = enPassantObjetivo!.$2;
+
+          int direccion = event.pieza.color == Tipo.blancas ? -1 : 1;
+          bool columnaAdyacente =
+              objetivoX == peonX - 1 || objetivoX == peonX + 1;
+          bool filaCorrecta = objetivoY == peonY + direccion;
+
+          if (columnaAdyacente && filaCorrecta) {
+            movimientos.add((objetivoX, objetivoY));
+          }
+        }
+
         // Solo se pueden ver los movimientos posibles de las piezas del turno actual
         List<List<CasillaMovible?>> tableroCasillasMovibles = [];
 
@@ -169,8 +192,9 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         if (event.coordenadasPieza != coordenadasPiezaSeleccionada) {
           tableroCasillasMovibles = List.generate(8, (indexColumna) {
             return List.generate(8, (indexFila) {
-              if (event.movimientosPosibles.contains(( // Compara cada elemento con movimientos posibles y si es
-              // devuelve una casilla movible, sino devuelve null
+              if (movimientos.contains((
+                // Compara cada elemento con movimientos posibles y si es
+                // devuelve una casilla movible, sino devuelve null
                 indexFila,
                 indexColumna,
               ))) {
@@ -203,8 +227,8 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
       // Crea una copia del estado actual del juego.
       PartidaJugando estadoActual = state as PartidaJugando;
       List<List<Pieza?>> tableroPiezas = estadoActual.tableroPiezas
-      .map((fila) => List<Pieza?>.from(fila))
-      .toList();
+          .map((fila) => List<Pieza?>.from(fila))
+          .toList();
       List<FaIconData> piezasNegrasComidas = List.from(
         estadoActual.piezasNegrasComidas,
       );
@@ -212,10 +236,33 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         estadoActual.piezasBlancasComidas,
       );
 
-      if (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] is Pieza) { // Si se come una pieza, añade el icono de
-      // piezas comidas dependiendo de si se esta jugando com oblancas o negras
+      // Captura En passant
+      bool esCapturaAlPaso =
+          piezaSeleccionada is Peon &&
+          enPassantObjetivo != null &&
+          event.coordenadas == enPassantObjetivo &&
+          tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] == null;
+
+      if (esCapturaAlPaso) {
+        FaIconData peonComido =
+            (tableroPiezas[enPassantPeon!.$1][enPassantPeon!.$2] as Pieza)
+                .icono;
+        if (estadoActual.turno == Tipo.blancas) {
+          piezasNegrasComidas.add(peonComido);
+        } else {
+          piezasBlancasComidas.add(peonComido);
+        }
+        tableroPiezas[enPassantPeon!.$1][enPassantPeon!.$2] = null;
+      }
+      // ---
+
+      // Captura normal
+      if (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] is Pieza) {
+        // Si se come una pieza, añade el icono de
+        // piezas comidas dependiendo de si se esta jugando com oblancas o negras
         FaIconData piezaComida =
-            (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] as Pieza).icono;
+            (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] as Pieza)
+                .icono;
         if (estadoActual.turno == Tipo.blancas) {
           piezasNegrasComidas.add(piezaComida);
         } else {
@@ -223,14 +270,33 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         }
       }
 
-      tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] = generarPieza( // Genera una nueva pieza en el lugar donde se movio
+      tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] = generarPieza(
+        // Genera una nueva pieza en el lugar donde se movio
         piezaSeleccionada as Pieza,
         event.coordenadas.$1,
         event.coordenadas.$2,
       );
 
       // Y elimina el original
-      tableroPiezas[coordenadasPiezaSeleccionada.$1][coordenadasPiezaSeleccionada.$2] = null;
+      tableroPiezas[coordenadasPiezaSeleccionada
+              .$1][coordenadasPiezaSeleccionada.$2] =
+          null;
+
+      // Abilitar en passant para el enemigo
+      bool esDoblePaso =
+          piezaSeleccionada is Peon &&
+          (event.coordenadas.$1 - coordenadasPiezaSeleccionada.$1).abs() == 2;
+
+      if (esDoblePaso) {
+        int filaIntermedia =
+            (coordenadasPiezaSeleccionada.$1 + event.coordenadas.$1) ~/ 2;
+        enPassantObjetivo = (filaIntermedia, event.coordenadas.$2);
+        enPassantPeon = event.coordenadas;
+      } else {
+        enPassantObjetivo = null;
+        enPassantPeon = null;
+      }
+      // --
 
       emit(
         PartidaJugando(
@@ -250,7 +316,8 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
     });
   }
 
-  Pieza? generarPieza(Pieza pieza, int y, int x) { // Genera una pieza del mismo tipo que se le pasa pero en posicion diferente
+  Pieza? generarPieza(Pieza pieza, int y, int x) {
+    // Genera una pieza del mismo tipo que se le pasa pero en posicion diferente
     switch (pieza.runtimeType) {
       case const (Peon):
         return Peon(color: pieza.color, x: x, y: y);
