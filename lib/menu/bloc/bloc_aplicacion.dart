@@ -25,15 +25,15 @@ final class AplicacionJugando extends AplicacionState {
 }
 
 // El bloc es el encargado de manejar el estado de la aplicacion
-class AplicacionBloc extends Bloc<AplicacionEvent, AplicacionState> {
-  AplicacionBloc() : super(AplicacionEsperando()) {
+class BlocAplicacion extends Bloc<AplicacionEvent, AplicacionState> {
+  BlocAplicacion() : super(AplicacionEsperando()) {
     //Inicia con el estado de esperando
     // El bloc escucha los eventos que se le envian, y dependiendo del evento, cambia su estado
-    // Se llama con BlocProvider.of<AplicacionBloc>(context).add(AplicacionIniciarPartida(duracion: 60));
+    // Se llama con BlocProvider.of<BlocAplicacion>(context).add(AplicacionIniciarPartida(duracion: 60));
     on<AplicacionIniciarPartida>((event, emit) {
       emit(AplicacionJugando(duracion: event.duracion));
       /*
-      Luego se puede acceder a la duracion con estado = BlocProvider.of<AplicacionBloc>(context).state y verificando que el estado sea AplicacionJugando
+      Luego se puede acceder a la duracion con estado = BlocProvider.of<BlocAplicacion>(context).state y verificando que el estado sea AplicacionJugando
       int duracion = estado.duracion
        */
     });

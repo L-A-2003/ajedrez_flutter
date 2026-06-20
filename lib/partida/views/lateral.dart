@@ -53,6 +53,12 @@ class _LateralState extends State<Lateral> {
   }
 
   @override
+  void dispose() {
+    temporizador.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     double anchoLateral = (MediaQuery.of(context).size.height - MediaQuery.of(context).size.width) / 2;
 

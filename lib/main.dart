@@ -21,7 +21,7 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       // BlocProvider crea el bloc de la aplicacion
       home: BlocProvider(
-        create: (context) => AplicacionBloc(),
+        create: (context) => BlocAplicacion(),
         // Todos los child de este BlocProvider van a poder acceder al bloc de la aplicacion, y escuchar sus cambios de estado
         child: Builder(
           // Se utiliza un builder para que el context este por debajo del BlocProvider, y asi poder acceder al bloc desde el context
@@ -30,7 +30,7 @@ class MainApp extends StatelessWidget {
               // Scaffold es base de la app
               body: Center(
                 // Solo utilizamos body, y lo centramos
-                child: BlocBuilder<AplicacionBloc, AplicacionState>(
+                child: BlocBuilder<BlocAplicacion, AplicacionState>(
                   builder: (context, state) {
                     // BlocBuilder escucha los cambios de estado del bloc de la aplicacion
                     switch (state) {

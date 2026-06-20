@@ -180,7 +180,7 @@ class _MenuPrincipalState extends State<MenuPrincipal> {
     inputKey.currentState!.save();
 
     if (inputKey.currentState!.validate()) {
-      BlocProvider.of<AplicacionBloc>(context).add(AplicacionIniciarPartida(duracion: int.parse(inputKey.currentState!.value)));
+      BlocProvider.of<BlocAplicacion>(context).add(AplicacionIniciarPartida(duracion: int.parse(inputKey.currentState!.value)));
     }
   }
 }

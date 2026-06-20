@@ -10,13 +10,7 @@ abstract class Pieza extends StatelessWidget {
   final Tipo color;
   final FaIconData icono;
 
-  const Pieza({
-    super.key,
-    required this.x,
-    required this.y,
-    required this.color,
-    required this.icono,
-  });
+  const Pieza({super.key, required this.x, required this.y, required this.color, required this.icono});
 
   List<(int, int)> obtenerPosiblesMovimientos();
 
@@ -72,23 +66,11 @@ abstract class Pieza extends StatelessWidget {
 
     return TapRegion(
       behavior: HitTestBehavior.translucent,
-      onTapInside: (event) => BlocProvider.of<BlocPartida>(context).add(
-        PartidaVerMovimientosPosibles(
-          pieza: this,
-          coordenadasPieza: (y, x),
-          movimientosPosibles: obtenerPosiblesMovimientos(),
-        ),
-      ),
+      onTapInside: (event) => BlocProvider.of<BlocPartida>(context).add(PartidaVerMovimientosPosibles(pieza: this, coordenadasPieza: (y, x), movimientosPosibles: obtenerPosiblesMovimientos())),
       child: SizedBox(
         height: medidaCasilla,
         width: medidaCasilla,
-        child: Center(
-          child: FaIcon(
-            icono,
-            color: color == Tipo.blancas ? Colors.deepPurple : Colors.black,
-            size: 36,
-          ),
-        ),
+        child: Center(child: FaIcon(icono, color: color == Tipo.blancas ? Colors.deepPurple : Colors.black, size: 36)),
       ),
     );
   }
