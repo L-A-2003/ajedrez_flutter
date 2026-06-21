@@ -35,6 +35,13 @@ final class PartidaTiempoAgotado extends PartidaEvent {
   PartidaTiempoAgotado({required this.color});
 }
 
+final class PartidaTransformarPeon extends PartidaEvent {
+  final Type pieza;
+  final (int, int) coordenadas;
+
+  PartidaTransformarPeon({required this.coordenadas, required this.pieza});
+}
+
 sealed class PartidaState {}
 
 // Estados de jugando, empate y ganador
@@ -62,6 +69,12 @@ final class PartidaGanador extends PartidaState {
   final Tipo color;
 
   PartidaGanador({required this.color});
+}
+
+final class PartidaPeonLlegoFinal extends PartidaState {
+  final (int, int) coordenadas;
+
+  PartidaPeonLlegoFinal({required this.coordenadas});
 }
 
 class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
@@ -196,6 +209,12 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         if (jaqueMate) {
           emit(PartidaGanador(color: estadoActual.turno));
         } else {
+          if (piezaSeleccionada.runtimeType == Peon) {
+            if ((event.coordenadas.$1 == 0 && piezaSeleccionada!.color == Tipo.blancas) || (event.coordenadas.$1 == 7 && piezaSeleccionada!.color == Tipo.negras)) {
+              emit(PartidaPeonLlegoFinal(coordenadas: event.coordenadas));
+            }
+          }
+
           emit(
             PartidaJugando(
               reyEnJaque: jaque,
@@ -217,6 +236,56 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         emit(PartidaEmpate());
       } else {
         emit(PartidaGanador(color: colorOponente));
+      }
+    });
+
+    on<PartidaTransformarPeon>((event, emit) {
+      late Pieza pieza;
+
+      Tipo color = piezaSeleccionada!.color;
+      PartidaJugando estadoActual = state as PartidaJugando;
+      List<List<Pieza?>> tableroPiezas = List.from(estadoActual.tableroPiezas);
+
+      switch (event.pieza) {
+        case const (Alfil):
+          pieza = Alfil(color: color, x: event.coordenadas.$2, y: event.coordenadas.$1);
+          break;
+        case const (Caballo):
+          pieza = Caballo(color: color, x: event.coordenadas.$2, y: event.coordenadas.$1);
+          break;
+        case const (Torre):
+          pieza = Torre(color: color, x: event.coordenadas.$2, y: event.coordenadas.$1);
+          break;
+        case const (Reina):
+          pieza = Reina(color: color, x: event.coordenadas.$2, y: event.coordenadas.$1);
+          break;
+      }
+
+      tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] = pieza;
+
+      Tipo colorTurnoSiguiente = estadoActual.turno == Tipo.blancas ? Tipo.negras : Tipo.blancas;
+      (int, int) coordenadasRey = obtenerCoordenadasRey(colorTurnoSiguiente, tableroPiezas);
+
+      bool jaqueMate = false;
+      bool jaque = reyEnJaque(coordenadasRey.$2, coordenadasRey.$1, colorTurnoSiguiente);
+
+      if (jaque) {
+        jaqueMate = reyEnJaqueMate(coordenadasRey.$2, coordenadasRey.$1, colorTurnoSiguiente, tableroPiezas);
+      }
+
+      if (jaqueMate) {
+        emit(PartidaGanador(color: estadoActual.turno));
+      } else {
+        emit(
+          PartidaJugando(
+            reyEnJaque: jaque,
+            turno: estadoActual.turno,
+            tableroCasillasMovibles: [],
+            tableroPiezas: tableroPiezas,
+            piezasBlancasComidas: estadoActual.piezasBlancasComidas,
+            piezasNegrasComidas: estadoActual.piezasNegrasComidas,
+          ),
+        );
       }
     });
   }
