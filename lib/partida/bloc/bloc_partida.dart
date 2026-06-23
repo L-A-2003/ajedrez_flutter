@@ -63,12 +63,17 @@ final class PartidaJugando extends PartidaState {
   });
 }
 
-final class PartidaEmpate extends PartidaState {}
+final class PartidaEmpate extends PartidaState {
+  final bool materialInsuficiente;
+
+  PartidaEmpate({required this.materialInsuficiente});
+}
 
 final class PartidaGanador extends PartidaState {
   final Tipo color;
+  final bool jaqueMate;
 
-  PartidaGanador({required this.color});
+  PartidaGanador({required this.color, required this.jaqueMate});
 }
 
 final class PartidaPeonLlegoFinal extends PartidaState {
@@ -191,23 +196,21 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         empate = tieneMaterialInsuficiente(Tipo.blancas) && tieneMaterialInsuficiente(Tipo.negras);
       }
 
-      //TODO: Falta revisar si el rey esta ahogado, en ese caso tambien se empata
-
       if (empate) {
-        emit(PartidaEmpate());
+        emit(PartidaEmpate(materialInsuficiente: true));
       } else {
         Tipo colorTurnoSiguiente = estadoActual.turno == Tipo.blancas ? Tipo.negras : Tipo.blancas;
         (int, int) coordenadasRey = obtenerCoordenadasRey(colorTurnoSiguiente, tableroPiezas);
 
-        bool jaqueMate = false;
         bool jaque = reyEnJaque(coordenadasRey.$2, coordenadasRey.$1, colorTurnoSiguiente);
+        bool sePuedeMover = hayMovimientoPosiblesReales(coordenadasRey.$2, coordenadasRey.$1, colorTurnoSiguiente, tableroPiezas);
 
-        if (jaque) {
-          jaqueMate = reyEnJaqueMate(coordenadasRey.$2, coordenadasRey.$1, colorTurnoSiguiente, tableroPiezas);
-        }
-
-        if (jaqueMate) {
-          emit(PartidaGanador(color: estadoActual.turno));
+        if (!sePuedeMover) {
+          if (jaque) {
+            emit(PartidaGanador(color: estadoActual.turno, jaqueMate: true));
+          } else {
+            emit(PartidaEmpate(materialInsuficiente: false));
+          }
         } else {
           if (piezaSeleccionada.runtimeType == Peon) {
             if ((event.coordenadas.$1 == 0 && piezaSeleccionada!.color == Tipo.blancas) || (event.coordenadas.$1 == 7 && piezaSeleccionada!.color == Tipo.negras)) {
@@ -233,9 +236,9 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
       Tipo colorOponente = event.color == Tipo.blancas ? Tipo.negras : Tipo.blancas;
 
       if (tieneMaterialInsuficiente(colorOponente)) {
-        emit(PartidaEmpate());
+        emit(PartidaEmpate(materialInsuficiente: true));
       } else {
-        emit(PartidaGanador(color: colorOponente));
+        emit(PartidaGanador(color: colorOponente, jaqueMate: false));
       }
     });
 
@@ -266,15 +269,15 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
       Tipo colorTurnoSiguiente = estadoActual.turno == Tipo.blancas ? Tipo.negras : Tipo.blancas;
       (int, int) coordenadasRey = obtenerCoordenadasRey(colorTurnoSiguiente, tableroPiezas);
 
-      bool jaqueMate = false;
       bool jaque = reyEnJaque(coordenadasRey.$2, coordenadasRey.$1, colorTurnoSiguiente);
+      bool sePuedeMover = hayMovimientoPosiblesReales(coordenadasRey.$2, coordenadasRey.$1, colorTurnoSiguiente, tableroPiezas);
 
-      if (jaque) {
-        jaqueMate = reyEnJaqueMate(coordenadasRey.$2, coordenadasRey.$1, colorTurnoSiguiente, tableroPiezas);
-      }
-
-      if (jaqueMate) {
-        emit(PartidaGanador(color: estadoActual.turno));
+      if (!sePuedeMover) {
+        if (jaque) {
+          emit(PartidaGanador(color: estadoActual.turno, jaqueMate: true));
+        } else {
+          emit(PartidaEmpate(materialInsuficiente: false));
+        }
       } else {
         emit(
           PartidaJugando(
@@ -820,7 +823,7 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
     return (-1, -1);
   }
 
-  bool reyEnJaqueMate(int y, int x, Tipo color, List<List<Pieza?>> tableroPiezas) {
+  bool hayMovimientoPosiblesReales(int y, int x, Tipo color, List<List<Pieza?>> tableroPiezas) {
     List<Pieza> piezas = [];
 
     for (List<Pieza?> columna in tableroPiezas) {

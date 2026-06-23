@@ -31,14 +31,15 @@ class Partida extends StatelessWidget {
                 reyEnJaque = state.reyEnJaque;
 
                 if (reyEnJaque) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Rey en jaque!"), duration: Duration(seconds: 1)));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Rey en jaque"), duration: Duration(seconds: 1)));
                 }
               }
               break;
             case PartidaEmpate():
+              cartelEmpate(context, BlocProvider.of<BlocAplicacion>(context), state.materialInsuficiente);
               break;
             case PartidaGanador():
-              cartelGanador(context, BlocProvider.of<BlocAplicacion>(context), state.color);
+              cartelGanador(context, BlocProvider.of<BlocAplicacion>(context), state.color, state.jaqueMate);
               break;
             case PartidaPeonLlegoFinal():
               cartelPeonLlegoFinal(context, blocPartida, state.coordenadas);
@@ -56,13 +57,33 @@ class Partida extends StatelessWidget {
     );
   }
 
-  Future<void> cartelGanador(BuildContext context, BlocAplicacion blocAplicacion, Tipo color) {
+  Future<void> cartelGanador(BuildContext context, BlocAplicacion blocAplicacion, Tipo color, bool jaqueMate) {
     return showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text("¡Victoria!"),
-        content: Text(color == Tipo.blancas ? "Blancas ganan" : "Negras ganan", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        title: const Text("Victoria"),
+        content: Text("${color == Tipo.blancas ? "Blancas ganan" : "Negras ganan"} por ${jaqueMate ? "jaque mate" : "tiempo"}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+        actions: [
+          TextButton(
+            onPressed: () {
+              blocAplicacion.add(AplicacionFinalizoPartida());
+              Navigator.of(context).pop();
+            },
+            child: const Text("Aceptar"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> cartelEmpate(BuildContext context, BlocAplicacion blocAplicacion, bool materialInsuficiente) {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text("Empate"),
+        content: Text("Por ${materialInsuficiente ? "material insuficiente" : "rey ahogado"}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
         actions: [
           TextButton(
             onPressed: () {
