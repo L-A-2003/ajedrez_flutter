@@ -85,6 +85,8 @@ final class PartidaPeonLlegoFinal extends PartidaState {
 class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
   BlocPartida() : super(PartidaJugando(turno: Tipo.blancas, reyEnJaque: false, tableroPiezas: [], piezasNegrasComidas: [], piezasBlancasComidas: [], tableroCasillasMovibles: [])) {
     Pieza? piezaSeleccionada;
+    (int, int)? enPassantObjetivo; // la casilla a la que se va a mover el peon luego de en passant
+    (int, int)? enPassantPeon; // El peon que se va a comer
     (int, int) coordenadasPiezaSeleccionada = (-1, -1);
 
     on<PartidaIniciar>((event, emit) {
@@ -125,7 +127,7 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         });
       });
       // Cambia el estado a PartidaJugando con el tablero inicializado
-      emit(PartidaJugando(turno: Tipo.blancas, reyEnJaque: false, piezasNegrasComidas: [], piezasBlancasComidas: [], tableroCasillasMovibles: [], tableroPiezas: tableroPiezas));
+      emit(PartidaJugando(turno: Tipo.blancas, reyEnJaque: false, piezasNegrasComidas: [], piezasBlancasComidas: [], tableroCasillasMovibles: [], tableroPiezas: tableroPiezas /*tableroPruebas()*/));
     });
 
     on<PartidaVerMovimientosPosibles>((event, emit) {
@@ -138,6 +140,48 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
         // Solo actualiza si la pieza que se clickeo es diferente a la anterior
         if (event.coordenadasPieza != coordenadasPiezaSeleccionada) {
           List<(int, int)> movimientosPosiblesReales = generarMovimientosPosiblesReales(event.movimientosPosibles, estadoActual.tableroPiezas, event.pieza, true);
+
+          // Si es un peon con un objetivo de en passant cercano, se agrega esa casilla.
+          if (event.pieza is Peon && enPassantObjetivo != null) {
+            int peonY = event.coordenadasPieza.$1;
+            int peonX = event.coordenadasPieza.$2;
+            int objetivoY = enPassantObjetivo!.$1;
+            int objetivoX = enPassantObjetivo!.$2;
+
+            int direccion = event.pieza.color == Tipo.blancas ? -1 : 1;
+            bool columnaAdyacente = objetivoX == peonX - 1 || objetivoX == peonX + 1;
+            bool filaCorrecta = objetivoY == peonY + direccion;
+
+            if (columnaAdyacente && filaCorrecta) {
+              movimientosPosiblesReales.add((objetivoX, objetivoY));
+            }
+          }
+
+          // Enroque
+          if (event.pieza.runtimeType == Rey && !(event.pieza as Rey).movido) {
+            int reyY = event.coordenadasPieza.$1;
+            Tipo color = event.pieza.color;
+
+            if (!reyEnJaque(reyY, event.coordenadasPieza.$2, color)) {
+              Pieza? torreDerecha = estadoActual.tableroPiezas[reyY][7];
+              Pieza? torreIzquierda = estadoActual.tableroPiezas[reyY][0];
+
+              if (torreDerecha.runtimeType == Torre &&
+                  !(torreDerecha as Torre).movido &&
+                  casillaLibreYSegura(reyY, 5, color, estadoActual.tableroPiezas) &&
+                  casillaLibreYSegura(reyY, 6, color, estadoActual.tableroPiezas)) {
+                movimientosPosiblesReales.add((6, reyY));
+              }
+
+              if (torreIzquierda.runtimeType == Torre &&
+                  !(torreIzquierda as Torre).movido &&
+                  estadoActual.tableroPiezas[reyY][1] == null &&
+                  casillaLibreYSegura(reyY, 2, color, estadoActual.tableroPiezas) &&
+                  casillaLibreYSegura(reyY, 3, color, estadoActual.tableroPiezas)) {
+                movimientosPosiblesReales.add((2, reyY));
+              }
+            }
+          }
 
           tableroCasillasMovibles = List.generate(8, (indexColumna) {
             return List.generate(8, (indexFila) {
@@ -177,10 +221,19 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
       List<FaIconData> piezasNegrasComidas = List.from(estadoActual.piezasNegrasComidas);
       List<FaIconData> piezasBlancasComidas = List.from(estadoActual.piezasBlancasComidas);
 
-      if (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] is Pieza) {
+      // Captura En passant
+      bool esCapturaAlPaso = piezaSeleccionada is Peon && enPassantObjetivo != null && event.coordenadas == enPassantObjetivo && tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] == null;
+
+      if (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] is Pieza || esCapturaAlPaso) {
         piezaComida = true;
 
-        FaIconData iconoPiezaComida = (tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] as Pieza).icono;
+        int yPiezaComida = esCapturaAlPaso ? enPassantPeon!.$1 : event.coordenadas.$1;
+        int xPiezaComida = esCapturaAlPaso ? enPassantPeon!.$2 : event.coordenadas.$2;
+        FaIconData iconoPiezaComida = (tableroPiezas[yPiezaComida][xPiezaComida] as Pieza).icono;
+
+        if (esCapturaAlPaso) {
+          tableroPiezas[enPassantPeon!.$1][enPassantPeon!.$2] = null;
+        }
 
         if (estadoActual.turno == Tipo.blancas) {
           piezasNegrasComidas.add(iconoPiezaComida);
@@ -191,6 +244,33 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
 
       tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] = generarPieza(piezaSeleccionada as Pieza, event.coordenadas.$1, event.coordenadas.$2);
       tableroPiezas[coordenadasPiezaSeleccionada.$1][coordenadasPiezaSeleccionada.$2] = null;
+
+      // Abilitar en passant para el enemigo
+      bool esDoblePaso = piezaSeleccionada is Peon && (event.coordenadas.$1 - coordenadasPiezaSeleccionada.$1).abs() == 2;
+
+      if (esDoblePaso) {
+        int filaIntermedia = (coordenadasPiezaSeleccionada.$1 + event.coordenadas.$1) ~/ 2;
+        enPassantObjetivo = (filaIntermedia, event.coordenadas.$2);
+        enPassantPeon = event.coordenadas;
+      } else {
+        enPassantObjetivo = null;
+        enPassantPeon = null;
+      }
+
+      // Enroque
+      bool esEnroque = piezaSeleccionada is Rey && (event.coordenadas.$2 - coordenadasPiezaSeleccionada.$2).abs() == 2;
+
+      if (esEnroque) {
+        int fila = event.coordenadas.$1;
+        bool haciaLaDerecha = event.coordenadas.$2 > coordenadasPiezaSeleccionada.$2;
+
+        int columnaTorreOrigen = haciaLaDerecha ? 7 : 0;
+        int columnaTorreDestino = haciaLaDerecha ? event.coordenadas.$2 - 1 : event.coordenadas.$2 + 1;
+
+        Pieza torre = tableroPiezas[fila][columnaTorreOrigen]!;
+        tableroPiezas[fila][columnaTorreDestino] = generarPieza(torre, fila, columnaTorreDestino);
+        tableroPiezas[fila][columnaTorreOrigen] = null;
+      }
 
       if (piezaComida) {
         empate = tieneMaterialInsuficiente(Tipo.blancas) && tieneMaterialInsuficiente(Tipo.negras);
@@ -257,7 +337,7 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
           pieza = Caballo(color: color, x: event.coordenadas.$2, y: event.coordenadas.$1);
           break;
         case const (Torre):
-          pieza = Torre(color: color, x: event.coordenadas.$2, y: event.coordenadas.$1);
+          pieza = Torre(color: color, x: event.coordenadas.$2, y: event.coordenadas.$1, movido: true);
           break;
         case const (Reina):
           pieza = Reina(color: color, x: event.coordenadas.$2, y: event.coordenadas.$1);
@@ -266,11 +346,9 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
 
       tableroPiezas[event.coordenadas.$1][event.coordenadas.$2] = pieza;
 
-      Tipo colorTurnoSiguiente = estadoActual.turno == Tipo.blancas ? Tipo.negras : Tipo.blancas;
-      (int, int) coordenadasRey = obtenerCoordenadasRey(colorTurnoSiguiente, tableroPiezas);
-
-      bool jaque = reyEnJaque(coordenadasRey.$2, coordenadasRey.$1, colorTurnoSiguiente);
-      bool sePuedeMover = hayMovimientoPosiblesReales(coordenadasRey.$2, coordenadasRey.$1, colorTurnoSiguiente, tableroPiezas);
+      (int, int) coordenadasRey = obtenerCoordenadasRey(estadoActual.turno, tableroPiezas);
+      bool jaque = reyEnJaque(coordenadasRey.$2, coordenadasRey.$1, estadoActual.turno);
+      bool sePuedeMover = hayMovimientoPosiblesReales(coordenadasRey.$2, coordenadasRey.$1, estadoActual.turno, tableroPiezas);
 
       if (!sePuedeMover) {
         if (jaque) {
@@ -298,7 +376,7 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
       case const (Peon):
         return Peon(color: pieza.color, x: x, y: y);
       case const (Torre):
-        return Torre(color: pieza.color, x: x, y: y);
+        return Torre(color: pieza.color, x: x, y: y, movido: true);
       case const (Caballo):
         return Caballo(color: pieza.color, x: x, y: y);
       case const (Alfil):
@@ -306,10 +384,18 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
       case const (Reina):
         return Reina(color: pieza.color, x: x, y: y);
       case const (Rey):
-        return Rey(color: pieza.color, x: x, y: y);
+        return Rey(color: pieza.color, x: x, y: y, movido: true);
     }
 
     return null;
+  }
+
+  bool casillaLibreYSegura(int y, int x, Tipo colorRey, List<List<Pieza?>> tableroPiezas) {
+    if (tableroPiezas[y][x] == null) {
+      return !reyEnJaque(y, x, colorRey);
+    } else {
+      return false;
+    }
   }
 
   bool reyEnJaque(int y, int x, Tipo colorRey, {List<List<Pieza?>>? tableroPiezasAlternativo}) {
@@ -477,11 +563,11 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
 
     //Peones
     if (colorRey == Tipo.blancas) {
-      if (y < 7 && buscarPeon(y + 1, x, tableroPiezas, colorRey)) {
+      if (y > 0 && buscarPeon(y - 1, x, tableroPiezas, colorRey)) {
         return true;
       }
     } else {
-      if (y > 0 && buscarPeon(y - 1, x, tableroPiezas, colorRey)) {
+      if (y < 7 && buscarPeon(y + 1, x, tableroPiezas, colorRey)) {
         return true;
       }
     }
@@ -627,7 +713,7 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
   }
 
   bool piezaAtacandoReyEsRey(Pieza pieza) {
-    return pieza.runtimeType == Caballo;
+    return pieza.runtimeType == Rey;
   }
 
   List<(int, int)> generarMovimientosPosiblesReales(List<(int, int)> movimientosPosibles, List<List<Pieza?>> tableroPiezas, Pieza pieza, bool tenerEnCuentaJaque) {
@@ -828,28 +914,34 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
 
     for (List<Pieza?> columna in tableroPiezas) {
       for (Pieza? pieza in columna) {
-        if (pieza != null && pieza.runtimeType != Rey && pieza.color == color) {
+        if (pieza != null && pieza.color == color) {
           piezas.add(pieza);
         }
       }
     }
 
     for (Pieza pieza in piezas) {
-      List<(int, int)> movimientosPosiblesReales = generarMovimientosPosiblesReales(pieza.obtenerPosiblesMovimientos(), tableroPiezas, pieza, false);
+      if (pieza.runtimeType == Rey) {
+        if (generarMovimientosPosiblesReales(pieza.obtenerPosiblesMovimientos(), tableroPiezas, pieza, false).isNotEmpty) {
+          return true;
+        }
+      } else {
+        List<(int, int)> movimientosPosiblesReales = generarMovimientosPosiblesReales(pieza.obtenerPosiblesMovimientos(), tableroPiezas, pieza, false);
 
-      for ((int, int) movimiento in movimientosPosiblesReales) {
-        List<List<Pieza?>> tableroPiezasAlternativo = generarCopiaTablero(tableroPiezas);
+        for ((int, int) movimiento in movimientosPosiblesReales) {
+          List<List<Pieza?>> tableroPiezasAlternativo = generarCopiaTablero(tableroPiezas);
 
-        tableroPiezasAlternativo[pieza.y][pieza.x] = null;
-        tableroPiezasAlternativo[movimiento.$2][movimiento.$1] = generarPieza(pieza, movimiento.$2, movimiento.$1);
+          tableroPiezasAlternativo[pieza.y][pieza.x] = null;
+          tableroPiezasAlternativo[movimiento.$2][movimiento.$1] = generarPieza(pieza, movimiento.$2, movimiento.$1);
 
-        if (!reyEnJaque(y, x, color, tableroPiezasAlternativo: tableroPiezasAlternativo)) {
-          return false;
+          if (!reyEnJaque(y, x, color, tableroPiezasAlternativo: tableroPiezasAlternativo)) {
+            return true;
+          }
         }
       }
     }
 
-    return true;
+    return false;
   }
 
   List<List<Pieza?>> generarCopiaTablero(List<List<Pieza?>> tableroPiezas) {
@@ -899,4 +991,17 @@ class BlocPartida extends Bloc<PartidaEvent, PartidaState> {
 
     return materialInsuficiente;
   }
+
+  /*List<List<Pieza?>> tableroPruebas() {
+    return [
+      [null, null, null, null, Rey(color: Tipo.negras, x: 4, y: 0), null, null, null],
+      [null, Peon(color: Tipo.negras, x: 1, y: 1, primerMovimiento: true), null, Peon(color: Tipo.negras, x: 3, y: 1, primerMovimiento: true), null, null, null, null],
+      [null, null, null, null, null, null, null, null],
+      [null, null, Peon(color: Tipo.blancas, x: 2, y: 3), null, null, null, null, null],
+      [null, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, null],
+      [null, null, null, null, Rey(color: Tipo.blancas, x: 4, y: 7), null, null, null],
+    ];
+  }*/
 }

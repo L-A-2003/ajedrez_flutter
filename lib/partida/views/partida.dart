@@ -106,7 +106,6 @@ class Partida extends StatelessWidget {
           spacing: 5,
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(onPressed: () => Navigator.pop(context), icon: FaIcon(FontAwesomeIcons.chessPawn)),
             IconButton(
               onPressed: () {
                 Navigator.pop(context);
